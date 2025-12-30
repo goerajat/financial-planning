@@ -138,8 +138,8 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
             // Convert the lesser of remaining room or available assets
             double conversionAmount = Math.min(remainingRoom, availableToConvert);
 
-            // Apply the conversion at individual level
-            applyConversion(individual, conversionAmount);
+            // Apply the conversion at individual level, funding tax from all individuals
+            applyConversion(individual, conversionAmount, currentYearlySummary);
 
             remainingRoom -= conversionAmount;
         }
@@ -208,13 +208,14 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
     /**
      * Applies a Roth conversion by moving assets from qualified to Roth.
      * Calculates the tax cost of the conversion and funds it by:
-     * 1. First reducing non-qualified contributions (individual level)
+     * 1. First reducing non-qualified contributions from ALL individuals in the household
      * 2. Then reducing the roth contributions (meaning less goes to Roth)
      *
-     * @param individual the individual yearly summary
+     * @param individual the individual yearly summary performing the conversion
      * @param amount the amount to convert
+     * @param summary the yearly summary containing all individuals for tax funding
      */
-    private void applyConversion(IndividualYearlySummary individual, double amount) {
+    private void applyConversion(IndividualYearlySummary individual, double amount, YearlySummary summary) {
         if (amount <= 0) {
             return;
         }
@@ -231,15 +232,8 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
         double currentQualifiedWithdrawals = individual.qualifiedWithdrawals();
         individual.setQualifiedWithdrawals(currentQualifiedWithdrawals + amount);
 
-        // Fund the tax cost - first from non-qualified contributions
-        double remainingTaxCost = taxCost;
-        double currentNonQualContributions = individual.nonQualifiedContributions();
-
-        if (currentNonQualContributions > 0) {
-            double fundedFromNonQual = Math.min(remainingTaxCost, currentNonQualContributions);
-            individual.setNonQualifiedContributions(currentNonQualContributions - fundedFromNonQual);
-            remainingTaxCost -= fundedFromNonQual;
-        }
+        // Fund the tax cost from non-qualified contributions across ALL individuals
+        double remainingTaxCost = fundTaxFromAllNonQualifiedContributions(taxCost, summary);
 
         // Calculate actual Roth contribution (conversion amount minus remaining tax cost)
         double actualRothContribution = amount - remainingTaxCost;
@@ -249,6 +243,33 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
         individual.setRothAssets(currentRoth + actualRothContribution);
         double currentRothContributions = individual.rothContributions();
         individual.setRothContributions(currentRothContributions + actualRothContribution);
+    }
+
+    /**
+     * Funds tax cost from non-qualified contributions across all individuals in the household.
+     * This allows married couples to use either spouse's surplus to pay conversion taxes.
+     *
+     * @param taxCost the total tax cost to fund
+     * @param summary the yearly summary containing all individuals
+     * @return the remaining tax cost after funding from non-qualified contributions
+     */
+    private double fundTaxFromAllNonQualifiedContributions(double taxCost, YearlySummary summary) {
+        double remainingTaxCost = taxCost;
+
+        for (IndividualYearlySummary ind : summary.individualSummaries().values()) {
+            if (remainingTaxCost <= 0) {
+                break;
+            }
+
+            double nonQualContributions = ind.nonQualifiedContributions();
+            if (nonQualContributions > 0) {
+                double fundedAmount = Math.min(remainingTaxCost, nonQualContributions);
+                ind.setNonQualifiedContributions(nonQualContributions - fundedAmount);
+                remainingTaxCost -= fundedAmount;
+            }
+        }
+
+        return remainingTaxCost;
     }
 
     /**

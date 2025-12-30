@@ -394,4 +394,39 @@ public class RothConversionOptimizationStrategyTest {
             assertTrue(individual.rothContributions() < conversionAmount);
         }
     }
+
+    @Test
+    public void testOptimize_taxFundedFromOtherIndividualsNonQualifiedContributions() {
+        // John does the conversion but has no non-qualified contributions
+        Person john = new Person("John", 1960);
+        IndividualYearlySummary johnSummary = new IndividualYearlySummary(john, 2025, 50000, 100000, 0, 50000, 0);
+        johnSummary.setNonQualifiedContributions(0); // John has no surplus
+
+        // Jane has non-qualified contributions that can fund John's conversion tax
+        Person jane = new Person("Jane", 1962);
+        IndividualYearlySummary janeSummary = new IndividualYearlySummary(jane, 2025, 50000, 0, 0, 50000, 0);
+        janeSummary.setNonQualifiedContributions(50000); // Jane has surplus
+
+        Map<String, IndividualYearlySummary> individuals = new HashMap<>();
+        individuals.put("John", johnSummary);
+        individuals.put("Jane", janeSummary);
+
+        double janeOriginalNonQualContrib = janeSummary.nonQualifiedContributions();
+
+        YearlySummary current = createYearlySummary(2025, individuals);
+        current.setNonQualifiedContributions(50000);
+        strategy.optimize(null, current);
+
+        double johnConversion = johnSummary.qualifiedWithdrawals();
+        if (johnConversion > 0) {
+            // Jane's non-qualified contributions should be reduced to fund John's tax
+            assertTrue(janeSummary.nonQualifiedContributions() < janeOriginalNonQualContrib);
+
+            // John's Roth contribution should equal the full conversion (tax funded by Jane)
+            double taxCost = strategy.calculateConversionTaxCost(johnConversion, 50000);
+            if (janeOriginalNonQualContrib >= taxCost) {
+                assertEquals(johnConversion, johnSummary.rothContributions(), 0.01);
+            }
+        }
+    }
 }
