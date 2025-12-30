@@ -343,6 +343,9 @@ public class FinancialDataProcessor {
             // Write header row with years
             writeHeaderRow(writer, summaries);
 
+            // Write age row for each individual
+            writeAgeRows(writer, summaries, allNames);
+
             // Income section
             writeTotalRow(writer, "Total Income", summaries, YearlySummary::totalIncome);
             for (String name : allNames) {
@@ -369,6 +372,13 @@ public class FinancialDataProcessor {
             for (String name : allNames) {
                 writeIndividualRow(writer, name + " Non-Qualified Withdrawals", summaries, name,
                         ind -> ind.nonQualifiedWithdrawals());
+            }
+
+            // Social Security Benefits section
+            writeTotalRow(writer, "Total Social Security Benefits", summaries, YearlySummary::totalSocialSecurity);
+            for (String name : allNames) {
+                writeIndividualRow(writer, name + " Social Security Benefits", summaries, name,
+                        ind -> ind.socialSecurityBenefits());
             }
 
             // Tax section
@@ -431,6 +441,28 @@ public class FinancialDataProcessor {
         }
         writer.write(sb.toString());
         writer.newLine();
+    }
+
+    /**
+     * Writes a row for each individual showing their name and age for each year.
+     */
+    private void writeAgeRows(BufferedWriter writer, YearlySummary[] summaries, Set<String> allNames) throws IOException {
+        for (String name : allNames) {
+            StringBuilder sb = new StringBuilder(name + " Age");
+            for (YearlySummary summary : summaries) {
+                if (summary != null) {
+                    IndividualYearlySummary individual = summary.getIndividualSummary(name);
+                    if (individual != null && individual.person() != null) {
+                        int age = individual.person().getAgeInYear(summary.year());
+                        sb.append(",").append(name).append("(").append(age).append(")");
+                    } else {
+                        sb.append(",");
+                    }
+                }
+            }
+            writer.write(sb.toString());
+            writer.newLine();
+        }
     }
 
     /**

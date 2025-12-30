@@ -523,4 +523,71 @@ public class FinancialDataProcessorTest {
 
         assertTrue(outputFile.exists());
     }
+
+    @Test
+    public void testExportYearlySummariesToCsv_includesAgeRows() throws IOException {
+        File csvFile = tempFolder.newFile("financial.csv");
+        String content = "name,item,description,value,startYear,endYear\n" +
+                "John,INCOME,Salary,100000,2024,2025\n" +
+                "Jane,INCOME,Salary,80000,2024,2025";
+        Files.writeString(csvFile.toPath(), content);
+
+        processor.loadFromCsv(csvFile.getAbsolutePath());
+
+        Map<ItemType, Double> percentages = new HashMap<>();
+        Map<String, Person> persons = new HashMap<>();
+        persons.put("John", new Person("John", 1960));
+        persons.put("Jane", new Person("Jane", 1965));
+
+        YearlySummary[] summaries = processor.generateYearlySummaries(percentages, persons);
+
+        File outputFile = tempFolder.newFile("output.csv");
+        processor.exportYearlySummariesToCsv(summaries, outputFile.getAbsolutePath());
+
+        String csvContent = Files.readString(outputFile.toPath());
+
+        // Check age rows exist with correct format
+        assertTrue(csvContent.contains("John Age"));
+        assertTrue(csvContent.contains("Jane Age"));
+        // John born 1960, should be 64 in 2024 and 65 in 2025
+        assertTrue(csvContent.contains("John(64)"));
+        assertTrue(csvContent.contains("John(65)"));
+        // Jane born 1965, should be 59 in 2024 and 60 in 2025
+        assertTrue(csvContent.contains("Jane(59)"));
+        assertTrue(csvContent.contains("Jane(60)"));
+    }
+
+    @Test
+    public void testExportYearlySummariesToCsv_includesSocialSecurityBenefits() throws IOException {
+        File csvFile = tempFolder.newFile("financial.csv");
+        String content = "name,item,description,value,startYear,endYear\n" +
+                "John,INCOME,Salary,50000,2024,2024\n" +
+                "John,SOCIAL_SECURITY_BENEFITS,SS,24000,2024,2024\n" +
+                "Jane,INCOME,Salary,40000,2024,2024\n" +
+                "Jane,SOCIAL_SECURITY_BENEFITS,SS,18000,2024,2024";
+        Files.writeString(csvFile.toPath(), content);
+
+        processor.loadFromCsv(csvFile.getAbsolutePath());
+
+        Map<ItemType, Double> percentages = new HashMap<>();
+        Map<String, Person> persons = new HashMap<>();
+        persons.put("John", new Person("John", 1960));
+        persons.put("Jane", new Person("Jane", 1965));
+
+        YearlySummary[] summaries = processor.generateYearlySummaries(percentages, persons);
+
+        File outputFile = tempFolder.newFile("output.csv");
+        processor.exportYearlySummariesToCsv(summaries, outputFile.getAbsolutePath());
+
+        String csvContent = Files.readString(outputFile.toPath());
+
+        // Check social security rows exist
+        assertTrue(csvContent.contains("Total Social Security Benefits"));
+        assertTrue(csvContent.contains("John Social Security Benefits"));
+        assertTrue(csvContent.contains("Jane Social Security Benefits"));
+        // Check values
+        assertTrue(csvContent.contains("42000.00")); // Total SS: 24000 + 18000
+        assertTrue(csvContent.contains("24000.00")); // John SS
+        assertTrue(csvContent.contains("18000.00")); // Jane SS
+    }
 }
