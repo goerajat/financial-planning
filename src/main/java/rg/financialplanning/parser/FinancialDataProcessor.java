@@ -166,10 +166,12 @@ public class FinancialDataProcessor {
             int year = earliestStartYear + i;
             YearlySummary previousSummary = i > 0 ? summaries[i - 1] : null;
 
-            // Income and Expenses: Calculate from active entries (old behavior)
+            // Income, Expenses, and Social Security: Calculate from active entries
             double totalIncome = 0;
             double totalExpenses = 0;
+            double totalSocialSecurity = 0;
             Map<String, Double> incomeByName = new HashMap<>();
+            Map<String, Double> socialSecurityByName = new HashMap<>();
 
             for (FinancialEntry entry : entries) {
                 if (entry.isActiveInYear(year)) {
@@ -183,6 +185,10 @@ public class FinancialDataProcessor {
                             incomeByName.merge(name, calculatedValue, Double::sum);
                         }
                         case EXPENSE -> totalExpenses += calculatedValue;
+                        case SOCIAL_SECURITY_BENEFITS -> {
+                            totalSocialSecurity += calculatedValue;
+                            socialSecurityByName.merge(name, calculatedValue, Double::sum);
+                        }
                         default -> { /* handled below */ }
                     }
                 }
@@ -201,15 +207,12 @@ public class FinancialDataProcessor {
                     percentageRates.getOrDefault(ItemType.REAL_ESTATE, 0.0));
             double lifeInsuranceBenefits = applyPercentageIncrease(previousSummary != null ? previousSummary.lifeInsuranceBenefits() : 0,
                     percentageRates.getOrDefault(ItemType.LIFE_INSURANCE_BENEFIT, 0.0));
-            double totalSocialSecurity = applyPercentageIncrease(previousSummary != null ? previousSummary.totalSocialSecurity() : 0,
-                    percentageRates.getOrDefault(ItemType.SOCIAL_SECURITY_BENEFITS, 0.0));
 
             Map<String, Double> qualifiedByName = new HashMap<>();
             Map<String, Double> nonQualifiedByName = new HashMap<>();
             Map<String, Double> rothByName = new HashMap<>();
-            Map<String, Double> socialSecurityByName = new HashMap<>();
 
-            // Add base values for entries that start this year (for non-income/expense types)
+            // Add base values for entries that start this year (for asset types)
             for (FinancialEntry entry : entries) {
                 if (entry.startYear() == year) {
                     double baseValue = entry.value();
@@ -228,14 +231,10 @@ public class FinancialDataProcessor {
                             rothAssets += baseValue;
                             rothByName.merge(name, baseValue, Double::sum);
                         }
-                        case SOCIAL_SECURITY_BENEFITS -> {
-                            totalSocialSecurity += baseValue;
-                            socialSecurityByName.merge(name, baseValue, Double::sum);
-                        }
                         case CASH -> cash += baseValue;
                         case REAL_ESTATE -> realEstate += baseValue;
                         case LIFE_INSURANCE_BENEFIT -> lifeInsuranceBenefits += baseValue;
-                        default -> { /* Income/Expense already handled above */ }
+                        default -> { /* Income/Expense/Social Security handled above */ }
                     }
                 }
             }
