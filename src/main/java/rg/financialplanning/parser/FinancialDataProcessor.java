@@ -29,12 +29,14 @@ public class FinancialDataProcessor {
     private int earliestStartYear;
     private int latestEndYear;
     private TaxOptimizationStrategy taxOptimizationStrategy;
+    private boolean validationEnabled;
 
     public FinancialDataProcessor() {
         this.entries = new ArrayList<>();
         this.earliestStartYear = Integer.MAX_VALUE;
         this.latestEndYear = Integer.MIN_VALUE;
         this.taxOptimizationStrategy = new CompositeTaxOptimizationStrategy();
+        this.validationEnabled = true;
     }
 
     /**
@@ -53,6 +55,25 @@ public class FinancialDataProcessor {
      */
     public TaxOptimizationStrategy getTaxOptimizationStrategy() {
         return taxOptimizationStrategy;
+    }
+
+    /**
+     * Enables or disables validation of yearly summaries after tax optimization.
+     * When enabled (default), an IllegalStateException is thrown if validation fails.
+     *
+     * @param enabled true to enable validation, false to disable
+     */
+    public void setValidationEnabled(boolean enabled) {
+        this.validationEnabled = enabled;
+    }
+
+    /**
+     * Returns whether validation is enabled.
+     *
+     * @return true if validation is enabled
+     */
+    public boolean isValidationEnabled() {
+        return validationEnabled;
     }
 
     public void loadFromCsv(String filePath) throws IOException {
@@ -270,6 +291,9 @@ public class FinancialDataProcessor {
             if (taxOptimizationStrategy != null) {
                 taxOptimizationStrategy.optimize(previousSummary, summaries[i]);
             }
+
+            // Validate the yearly summary after optimization strategies have been applied
+            validateYearlySummary(summaries[i]);
         }
 
         return summaries;
@@ -277,6 +301,32 @@ public class FinancialDataProcessor {
 
     private double applyPercentageIncrease(double value, double percentageRate) {
         return value * (1 + percentageRate / 100);
+    }
+
+    /**
+     * Validates a YearlySummary after tax optimization strategies have been applied.
+     * Checks both individual totals consistency and cash flow balance.
+     * Only performs validation if validationEnabled is true.
+     *
+     * @param summary the YearlySummary to validate
+     * @throws IllegalStateException if validation is enabled and fails
+     */
+    private void validateYearlySummary(YearlySummary summary) {
+        if (!validationEnabled) {
+            return;
+        }
+
+        if (!summary.validateIndividualTotals()) {
+            throw new IllegalStateException(
+                    "Year " + summary.year() + " validation failed - individual totals mismatch:\n" +
+                    summary.getIndividualTotalsValidationDetails());
+        }
+
+        if (!summary.validateCashFlow()) {
+            throw new IllegalStateException(
+                    "Year " + summary.year() + " validation failed - cash flow imbalance:\n" +
+                    summary.getCashFlowValidationDetails());
+        }
     }
 
     /**

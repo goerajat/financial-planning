@@ -29,6 +29,8 @@ public class FinancialDataProcessorTest {
     @Before
     public void setUp() {
         processor = new FinancialDataProcessor();
+        // Disable validation for simplified test data that may not have balanced cash flows
+        processor.setValidationEnabled(false);
     }
 
     // ===== loadFromCsv tests =====
@@ -589,5 +591,66 @@ public class FinancialDataProcessorTest {
         assertTrue(csvContent.contains("42000.00")); // Total SS: 24000 + 18000
         assertTrue(csvContent.contains("24000.00")); // John SS
         assertTrue(csvContent.contains("18000.00")); // Jane SS
+    }
+
+    // ===== Validation tests =====
+
+    @Test
+    public void testValidationEnabled_defaultIsTrue() {
+        FinancialDataProcessor newProcessor = new FinancialDataProcessor();
+        assertTrue(newProcessor.isValidationEnabled());
+    }
+
+    @Test
+    public void testSetValidationEnabled() {
+        FinancialDataProcessor newProcessor = new FinancialDataProcessor();
+        newProcessor.setValidationEnabled(false);
+        assertFalse(newProcessor.isValidationEnabled());
+        newProcessor.setValidationEnabled(true);
+        assertTrue(newProcessor.isValidationEnabled());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testValidation_throwsOnCashFlowImbalance() throws IOException {
+        // Create a processor with validation enabled but NO tax optimization strategy
+        // This will cause cash flow imbalance since surplus won't be handled
+        FinancialDataProcessor validatingProcessor = new FinancialDataProcessor();
+        validatingProcessor.setValidationEnabled(true);
+        validatingProcessor.setTaxOptimizationStrategy(null); // Disable strategies to cause imbalance
+
+        File csvFile = tempFolder.newFile("financial_unbalanced.csv");
+        // This data has income but no strategy to handle surplus, so cash flow won't balance
+        String content = "name,item,description,value,startYear,endYear\n" +
+                "John,INCOME,Salary,100000,2024,2024";
+        Files.writeString(csvFile.toPath(), content);
+
+        validatingProcessor.loadFromCsv(csvFile.getAbsolutePath());
+
+        Map<ItemType, Double> percentages = new HashMap<>();
+        Map<String, Person> persons = new HashMap<>();
+        persons.put("John", new Person("John", 1980));
+
+        // This should throw IllegalStateException due to cash flow imbalance
+        // (income of 100000 with no expenses, taxes, or contributions recorded)
+        validatingProcessor.generateYearlySummaries(percentages, persons);
+    }
+
+    @Test
+    public void testValidation_passesWhenDisabled() throws IOException {
+        // Validation is disabled in setUp, so this should not throw
+        File csvFile = tempFolder.newFile("financial_unbalanced2.csv");
+        String content = "name,item,description,value,startYear,endYear\n" +
+                "John,INCOME,Salary,100000,2024,2024";
+        Files.writeString(csvFile.toPath(), content);
+
+        processor.loadFromCsv(csvFile.getAbsolutePath());
+
+        Map<ItemType, Double> percentages = new HashMap<>();
+        Map<String, Person> persons = new HashMap<>();
+        persons.put("John", new Person("John", 1980));
+
+        // Should not throw since validation is disabled
+        YearlySummary[] summaries = processor.generateYearlySummaries(percentages, persons);
+        assertEquals(1, summaries.length);
     }
 }
