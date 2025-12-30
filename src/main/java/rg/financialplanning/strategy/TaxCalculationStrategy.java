@@ -115,15 +115,10 @@ public class TaxCalculationStrategy implements TaxOptimizationStrategy {
         double rmdWithdrawals = summary.rmdWithdrawals();
         double qualifiedWithdrawals = summary.qualifiedWithdrawals();
 
-        // Roth conversions are tracked as both qualified withdrawals and Roth contributions
-        // The qualified withdrawal portion is already included in qualifiedWithdrawals
-        // Roth contributions represent the amount converted, which should be taxed
-        double rothConversions = summary.rothContributions();
-
         // Social Security benefits - approximately 85% taxable for higher earners
         double taxableSocialSecurity = summary.totalSocialSecurity() * 0.85;
 
-        return totalIncome + rmdWithdrawals + qualifiedWithdrawals + rothConversions + taxableSocialSecurity;
+        return totalIncome + rmdWithdrawals + qualifiedWithdrawals + taxableSocialSecurity;
     }
 
     /**

@@ -207,6 +207,9 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
 
     /**
      * Applies a Roth conversion by moving assets from qualified to Roth.
+     * Calculates the tax cost of the conversion and funds it by:
+     * 1. First reducing non-qualified contributions (individual level)
+     * 2. Then reducing the roth contributions (meaning less goes to Roth)
      *
      * @param individual the individual yearly summary
      * @param amount the amount to convert
@@ -216,17 +219,36 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
             return;
         }
 
+        // Calculate current taxable income for this individual
+        double currentTaxableIncome = calculateIndividualTaxableIncome(individual);
+
+        // Calculate the tax cost of the conversion
+        double taxCost = calculateConversionTaxCost(amount, currentTaxableIncome);
+
         // Reduce qualified assets and track withdrawal
         double currentQualified = individual.qualifiedAssets();
         individual.setQualifiedAssets(currentQualified - amount);
         double currentQualifiedWithdrawals = individual.qualifiedWithdrawals();
         individual.setQualifiedWithdrawals(currentQualifiedWithdrawals + amount);
 
+        // Fund the tax cost - first from non-qualified contributions
+        double remainingTaxCost = taxCost;
+        double currentNonQualContributions = individual.nonQualifiedContributions();
+
+        if (currentNonQualContributions > 0) {
+            double fundedFromNonQual = Math.min(remainingTaxCost, currentNonQualContributions);
+            individual.setNonQualifiedContributions(currentNonQualContributions - fundedFromNonQual);
+            remainingTaxCost -= fundedFromNonQual;
+        }
+
+        // Calculate actual Roth contribution (conversion amount minus remaining tax cost)
+        double actualRothContribution = amount - remainingTaxCost;
+
         // Increase Roth assets and track contribution
         double currentRoth = individual.rothAssets();
-        individual.setRothAssets(currentRoth + amount);
+        individual.setRothAssets(currentRoth + actualRothContribution);
         double currentRothContributions = individual.rothContributions();
-        individual.setRothContributions(currentRothContributions + amount);
+        individual.setRothContributions(currentRothContributions + actualRothContribution);
     }
 
     /**
@@ -239,18 +261,21 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
         double totalRoth = 0.0;
         double totalQualifiedWithdrawals = 0.0;
         double totalRothContributions = 0.0;
+        double totalNonQualifiedContributions = 0.0;
 
         for (IndividualYearlySummary individual : summary.individualSummaries().values()) {
             totalQualified += individual.qualifiedAssets();
             totalRoth += individual.rothAssets();
             totalQualifiedWithdrawals += individual.qualifiedWithdrawals();
             totalRothContributions += individual.rothContributions();
+            totalNonQualifiedContributions += individual.nonQualifiedContributions();
         }
 
         summary.setQualifiedAssets(totalQualified);
         summary.setRothAssets(totalRoth);
         summary.setQualifiedWithdrawals(totalQualifiedWithdrawals);
         summary.setRothContributions(totalRothContributions);
+        summary.setNonQualifiedContributions(totalNonQualifiedContributions);
     }
 
     /**
