@@ -1,0 +1,13 @@
+name,item,description,value,start_year,end_year
+John,income,Salary,60000,2024,2030
+John,income,Side Business,12000,2025,2030
+John,expense,Rent,18000,2024,2050
+John,expense,Utilities,3600,2024,2050
+John,expense,Groceries,7200,2024,2050
+John,non_qualified,Savings Account,50000,2024,2050
+John,qualified,Investment Portfolio,100000,2024,2050
+John,roth,Roth IRA,25000,2024,2050
+John,social_security,SSA Benefits,28000,2031,2050
+Jane,income,Salary,55000,2024,2032
+Jane,qualified,401K,80000,2024,2050
+Jane,social_security,SSA Benefits,24000,2033,2050
