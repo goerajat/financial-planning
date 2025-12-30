@@ -422,11 +422,17 @@ public class YearlySummary {
     }
 
     /**
-     * Calculates total cash outflows: expenses + taxes + contributions.
-     * Note: rothContributions represents Roth conversions (internal transfer) and is excluded.
+     * Calculates total cash outflows: expenses + taxes + all contributions.
      */
     public double totalCashOutflows() {
-        return totalExpenses + totalTaxes() + nonQualifiedContributions;
+        return totalExpenses + totalTaxes() + rothContributions + qualifiedContributions + nonQualifiedContributions;
+    }
+
+    /**
+     * Calculates total contributions: roth + qualified + non-qualified.
+     */
+    public double totalContributions() {
+        return rothContributions + qualifiedContributions + nonQualifiedContributions;
     }
 
     /**
@@ -465,6 +471,8 @@ public class YearlySummary {
         sb.append(String.format("Cash Outflows: %.2f%n", outflows));
         sb.append(String.format("  Expenses: %.2f%n", totalExpenses));
         sb.append(String.format("  Total Taxes: %.2f%n", totalTaxes()));
+        sb.append(String.format("  Roth Contributions: %.2f%n", rothContributions));
+        sb.append(String.format("  Qualified Contributions: %.2f%n", qualifiedContributions));
         sb.append(String.format("  Non-Qualified Contributions: %.2f%n", nonQualifiedContributions));
         sb.append(String.format("Deficit: %.2f%n", deficit));
         sb.append(String.format("Difference (should be 0): %.2f%n", difference));
