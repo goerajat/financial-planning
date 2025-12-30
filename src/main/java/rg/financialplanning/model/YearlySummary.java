@@ -297,6 +297,191 @@ public class YearlySummary {
         return individual != null ? individual.socialSecurityBenefits() : 0.0;
     }
 
+    // ===== Validation Methods =====
+
+    private static final double EPSILON = 0.01; // Tolerance for floating point comparison
+
+    /**
+     * Calculates the sum of individual incomes.
+     */
+    public double sumIndividualIncome() {
+        return individualSummaries.values().stream()
+                .mapToDouble(IndividualYearlySummary::income)
+                .sum();
+    }
+
+    /**
+     * Calculates the sum of individual RMD withdrawals.
+     */
+    public double sumIndividualRmdWithdrawals() {
+        return individualSummaries.values().stream()
+                .mapToDouble(IndividualYearlySummary::rmdWithdrawals)
+                .sum();
+    }
+
+    /**
+     * Calculates the sum of individual Roth withdrawals.
+     */
+    public double sumIndividualRothWithdrawals() {
+        return individualSummaries.values().stream()
+                .mapToDouble(IndividualYearlySummary::rothWithdrawals)
+                .sum();
+    }
+
+    /**
+     * Calculates the sum of individual qualified withdrawals.
+     */
+    public double sumIndividualQualifiedWithdrawals() {
+        return individualSummaries.values().stream()
+                .mapToDouble(IndividualYearlySummary::qualifiedWithdrawals)
+                .sum();
+    }
+
+    /**
+     * Calculates the sum of individual non-qualified withdrawals.
+     */
+    public double sumIndividualNonQualifiedWithdrawals() {
+        return individualSummaries.values().stream()
+                .mapToDouble(IndividualYearlySummary::nonQualifiedWithdrawals)
+                .sum();
+    }
+
+    /**
+     * Calculates the sum of individual social security benefits.
+     */
+    public double sumIndividualSocialSecurity() {
+        return individualSummaries.values().stream()
+                .mapToDouble(IndividualYearlySummary::socialSecurityBenefits)
+                .sum();
+    }
+
+    /**
+     * Validates that the sum of individual values equals the corresponding yearly summary totals.
+     * Checks: income, RMD withdrawals, Roth withdrawals, qualified withdrawals,
+     * non-qualified withdrawals, and social security benefits.
+     *
+     * @return true if all individual totals match the yearly summary totals
+     */
+    public boolean validateIndividualTotals() {
+        return Math.abs(sumIndividualIncome() - totalIncome) < EPSILON &&
+               Math.abs(sumIndividualRmdWithdrawals() - rmdWithdrawals) < EPSILON &&
+               Math.abs(sumIndividualRothWithdrawals() - rothWithdrawals) < EPSILON &&
+               Math.abs(sumIndividualQualifiedWithdrawals() - qualifiedWithdrawals) < EPSILON &&
+               Math.abs(sumIndividualNonQualifiedWithdrawals() - nonQualifiedWithdrawals) < EPSILON &&
+               Math.abs(sumIndividualSocialSecurity() - totalSocialSecurity) < EPSILON;
+    }
+
+    /**
+     * Returns a detailed validation result for individual totals.
+     * Useful for debugging when validation fails.
+     *
+     * @return a string describing any mismatches, or "Valid" if all match
+     */
+    public String getIndividualTotalsValidationDetails() {
+        StringBuilder sb = new StringBuilder();
+
+        double incomeSum = sumIndividualIncome();
+        if (Math.abs(incomeSum - totalIncome) >= EPSILON) {
+            sb.append(String.format("Income mismatch: sum=%.2f, total=%.2f%n", incomeSum, totalIncome));
+        }
+
+        double rmdSum = sumIndividualRmdWithdrawals();
+        if (Math.abs(rmdSum - rmdWithdrawals) >= EPSILON) {
+            sb.append(String.format("RMD Withdrawals mismatch: sum=%.2f, total=%.2f%n", rmdSum, rmdWithdrawals));
+        }
+
+        double rothWdSum = sumIndividualRothWithdrawals();
+        if (Math.abs(rothWdSum - rothWithdrawals) >= EPSILON) {
+            sb.append(String.format("Roth Withdrawals mismatch: sum=%.2f, total=%.2f%n", rothWdSum, rothWithdrawals));
+        }
+
+        double qualWdSum = sumIndividualQualifiedWithdrawals();
+        if (Math.abs(qualWdSum - qualifiedWithdrawals) >= EPSILON) {
+            sb.append(String.format("Qualified Withdrawals mismatch: sum=%.2f, total=%.2f%n", qualWdSum, qualifiedWithdrawals));
+        }
+
+        double nonQualWdSum = sumIndividualNonQualifiedWithdrawals();
+        if (Math.abs(nonQualWdSum - nonQualifiedWithdrawals) >= EPSILON) {
+            sb.append(String.format("Non-Qualified Withdrawals mismatch: sum=%.2f, total=%.2f%n", nonQualWdSum, nonQualifiedWithdrawals));
+        }
+
+        double ssSum = sumIndividualSocialSecurity();
+        if (Math.abs(ssSum - totalSocialSecurity) >= EPSILON) {
+            sb.append(String.format("Social Security mismatch: sum=%.2f, total=%.2f%n", ssSum, totalSocialSecurity));
+        }
+
+        return sb.length() == 0 ? "Valid" : sb.toString().trim();
+    }
+
+    /**
+     * Calculates total cash inflows: income + social security + all withdrawals.
+     */
+    public double totalCashInflows() {
+        return totalIncome + totalSocialSecurity + rmdWithdrawals + qualifiedWithdrawals +
+               nonQualifiedWithdrawals + rothWithdrawals + cashWithdrawals;
+    }
+
+    /**
+     * Calculates total cash outflows: expenses + taxes + contributions.
+     * Note: rothContributions represents Roth conversions (internal transfer) and is excluded.
+     */
+    public double totalCashOutflows() {
+        return totalExpenses + totalTaxes() + nonQualifiedContributions;
+    }
+
+    /**
+     * Validates that total cash inflows plus deficit equal total cash outflows.
+     * Formula: Income + SS + Withdrawals + Deficit = Expenses + Taxes + Contributions
+     * (Deficit fills the gap when inflows are insufficient to cover outflows)
+     *
+     * @return true if cash flow is balanced
+     */
+    public boolean validateCashFlow() {
+        double inflows = totalCashInflows();
+        double outflows = totalCashOutflows();
+        return Math.abs(inflows + deficit - outflows) < EPSILON;
+    }
+
+    /**
+     * Returns a detailed validation result for cash flow.
+     * Useful for debugging when validation fails.
+     *
+     * @return a string describing the cash flow breakdown and any imbalance
+     */
+    public String getCashFlowValidationDetails() {
+        double inflows = totalCashInflows();
+        double outflows = totalCashOutflows();
+        double difference = inflows + deficit - outflows;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("Cash Inflows: %.2f%n", inflows));
+        sb.append(String.format("  Income: %.2f%n", totalIncome));
+        sb.append(String.format("  Social Security: %.2f%n", totalSocialSecurity));
+        sb.append(String.format("  RMD Withdrawals: %.2f%n", rmdWithdrawals));
+        sb.append(String.format("  Qualified Withdrawals: %.2f%n", qualifiedWithdrawals));
+        sb.append(String.format("  Non-Qualified Withdrawals: %.2f%n", nonQualifiedWithdrawals));
+        sb.append(String.format("  Roth Withdrawals: %.2f%n", rothWithdrawals));
+        sb.append(String.format("  Cash Withdrawals: %.2f%n", cashWithdrawals));
+        sb.append(String.format("Cash Outflows: %.2f%n", outflows));
+        sb.append(String.format("  Expenses: %.2f%n", totalExpenses));
+        sb.append(String.format("  Total Taxes: %.2f%n", totalTaxes()));
+        sb.append(String.format("  Non-Qualified Contributions: %.2f%n", nonQualifiedContributions));
+        sb.append(String.format("Deficit: %.2f%n", deficit));
+        sb.append(String.format("Difference (should be 0): %.2f%n", difference));
+        sb.append(Math.abs(difference) < EPSILON ? "Status: VALID" : "Status: INVALID");
+
+        return sb.toString();
+    }
+
+    /**
+     * Validates both individual totals and cash flow.
+     *
+     * @return true if both validations pass
+     */
+    public boolean validate() {
+        return validateIndividualTotals() && validateCashFlow();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

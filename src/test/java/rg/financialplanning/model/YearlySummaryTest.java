@@ -318,4 +318,244 @@ public class YearlySummaryTest {
         assertTrue(result.contains("2025"));
         assertTrue(result.contains("180000"));
     }
+
+    // ===== Validation Method Tests =====
+
+    @Test
+    public void testSumIndividualIncome() {
+        // John: 100000, Jane: 80000
+        assertEquals(180000, summary.sumIndividualIncome(), 0.001);
+    }
+
+    @Test
+    public void testSumIndividualSocialSecurity() {
+        // John: 30000, Jane: 25000
+        assertEquals(55000, summary.sumIndividualSocialSecurity(), 0.001);
+    }
+
+    @Test
+    public void testSumIndividualRmdWithdrawals_initiallyZero() {
+        assertEquals(0.0, summary.sumIndividualRmdWithdrawals(), 0.001);
+    }
+
+    @Test
+    public void testSumIndividualQualifiedWithdrawals_initiallyZero() {
+        assertEquals(0.0, summary.sumIndividualQualifiedWithdrawals(), 0.001);
+    }
+
+    @Test
+    public void testSumIndividualNonQualifiedWithdrawals_initiallyZero() {
+        assertEquals(0.0, summary.sumIndividualNonQualifiedWithdrawals(), 0.001);
+    }
+
+    @Test
+    public void testSumIndividualRothWithdrawals_initiallyZero() {
+        assertEquals(0.0, summary.sumIndividualRothWithdrawals(), 0.001);
+    }
+
+    @Test
+    public void testValidateIndividualTotals_validWhenSumsMatch() {
+        // Initial state: income and SS sums match totals, withdrawals are all 0
+        assertTrue(summary.validateIndividualTotals());
+    }
+
+    @Test
+    public void testValidateIndividualTotals_invalidWhenIncomeMismatch() {
+        // Create summary with mismatched income total
+        YearlySummary mismatchedSummary = new YearlySummary(2025, 200000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, individualSummaries);
+        assertFalse(mismatchedSummary.validateIndividualTotals());
+    }
+
+    @Test
+    public void testValidateIndividualTotals_invalidWhenSocialSecurityMismatch() {
+        // Create summary with mismatched social security total
+        YearlySummary mismatchedSummary = new YearlySummary(2025, 180000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 70000, individualSummaries);
+        assertFalse(mismatchedSummary.validateIndividualTotals());
+    }
+
+    @Test
+    public void testValidateIndividualTotals_validWithWithdrawals() {
+        // Set withdrawals on individuals and totals to match
+        IndividualYearlySummary ind1 = summary.getIndividualSummary("John");
+        IndividualYearlySummary ind2 = summary.getIndividualSummary("Jane");
+        ind1.setRmdWithdrawals(10000);
+        ind2.setRmdWithdrawals(5000);
+        summary.setRmdWithdrawals(15000);
+
+        ind1.setQualifiedWithdrawals(20000);
+        ind2.setQualifiedWithdrawals(10000);
+        summary.setQualifiedWithdrawals(30000);
+
+        assertTrue(summary.validateIndividualTotals());
+    }
+
+    @Test
+    public void testGetIndividualTotalsValidationDetails_returnsValidWhenMatch() {
+        String result = summary.getIndividualTotalsValidationDetails();
+        assertEquals("Valid", result);
+    }
+
+    @Test
+    public void testGetIndividualTotalsValidationDetails_showsMismatchDetails() {
+        YearlySummary mismatchedSummary = new YearlySummary(2025, 200000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, individualSummaries);
+        String result = mismatchedSummary.getIndividualTotalsValidationDetails();
+        assertTrue(result.contains("Income mismatch"));
+    }
+
+    @Test
+    public void testTotalCashInflows() {
+        summary.setRmdWithdrawals(10000);
+        summary.setQualifiedWithdrawals(5000);
+        summary.setNonQualifiedWithdrawals(3000);
+        summary.setRothWithdrawals(2000);
+        summary.setCashWithdrawals(1000);
+
+        // income + SS + all withdrawals
+        double expected = 180000 + 55000 + 10000 + 5000 + 3000 + 2000 + 1000;
+        assertEquals(expected, summary.totalCashInflows(), 0.001);
+    }
+
+    @Test
+    public void testTotalCashOutflows() {
+        summary.setFederalIncomeTax(20000);
+        summary.setStateIncomeTax(5000);
+        summary.setSocialSecurityTax(7000);
+        summary.setMedicareTax(2000);
+        summary.setCapitalGainsTax(1000);
+        summary.setNonQualifiedContributions(10000);
+
+        // expenses + totalTaxes + nonQualifiedContributions
+        double expectedTaxes = 20000 + 5000 + 7000 + 2000 + 1000;
+        double expected = 120000 + expectedTaxes + 10000;
+        assertEquals(expected, summary.totalCashOutflows(), 0.001);
+    }
+
+    @Test
+    public void testValidateCashFlow_validWhenBalanced() {
+        // Set up a balanced cash flow scenario
+        // Inflows: 180000 (income) + 55000 (SS) = 235000
+        // Outflows: 120000 (expenses) + taxes + contributions
+        // Need: inflows = outflows + deficit
+
+        summary.setFederalIncomeTax(50000);
+        summary.setStateIncomeTax(10000);
+        summary.setSocialSecurityTax(0);
+        summary.setMedicareTax(0);
+        summary.setCapitalGainsTax(0);
+        summary.setNonQualifiedContributions(55000); // surplus invested
+        summary.setDeficit(0);
+
+        // Inflows: 180000 + 55000 = 235000
+        // Outflows: 120000 + 60000 (taxes) + 55000 (contributions) = 235000
+        assertTrue(summary.validateCashFlow());
+    }
+
+    @Test
+    public void testValidateCashFlow_validWithDeficit() {
+        // Set up scenario with deficit
+        summary.setFederalIncomeTax(100000);
+        summary.setStateIncomeTax(20000);
+        summary.setSocialSecurityTax(0);
+        summary.setMedicareTax(0);
+        summary.setCapitalGainsTax(0);
+        summary.setNonQualifiedContributions(0);
+        // Inflows: 180000 + 55000 = 235000
+        // Outflows: 120000 + 120000 (taxes) = 240000
+        // Deficit should be: 240000 - 235000 = 5000
+        summary.setDeficit(5000);
+
+        assertTrue(summary.validateCashFlow());
+    }
+
+    @Test
+    public void testValidateCashFlow_invalidWhenNotBalanced() {
+        summary.setFederalIncomeTax(50000);
+        summary.setStateIncomeTax(10000);
+        summary.setSocialSecurityTax(0);
+        summary.setMedicareTax(0);
+        summary.setCapitalGainsTax(0);
+        summary.setNonQualifiedContributions(0);
+        summary.setDeficit(0);
+
+        // Inflows: 180000 + 55000 = 235000
+        // Outflows: 120000 + 60000 = 180000
+        // Should have 55000 surplus but none recorded
+        assertFalse(summary.validateCashFlow());
+    }
+
+    @Test
+    public void testGetCashFlowValidationDetails_showsBreakdown() {
+        summary.setFederalIncomeTax(20000);
+        summary.setNonQualifiedContributions(10000);
+        summary.setDeficit(5000);
+
+        String result = summary.getCashFlowValidationDetails();
+        assertTrue(result.contains("Cash Inflows"));
+        assertTrue(result.contains("Cash Outflows"));
+        assertTrue(result.contains("Income"));
+        assertTrue(result.contains("Expenses"));
+        assertTrue(result.contains("Deficit"));
+    }
+
+    @Test
+    public void testValidate_validWhenBothPass() {
+        // Set up balanced scenario
+        summary.setFederalIncomeTax(50000);
+        summary.setStateIncomeTax(10000);
+        summary.setNonQualifiedContributions(55000);
+        summary.setDeficit(0);
+
+        assertTrue(summary.validate());
+    }
+
+    @Test
+    public void testValidate_invalidWhenIndividualTotalsFail() {
+        // Create mismatched income
+        YearlySummary mismatchedSummary = new YearlySummary(2025, 200000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, individualSummaries);
+        assertFalse(mismatchedSummary.validate());
+    }
+
+    @Test
+    public void testValidate_invalidWhenCashFlowFails() {
+        // Income totals match but cash flow doesn't balance
+        summary.setDeficit(0);
+        summary.setNonQualifiedContributions(0);
+        // No taxes set, so outflows are just expenses (120000)
+        // Inflows are 235000, so this should fail
+        assertFalse(summary.validate());
+    }
+
+    @Test
+    public void testSumIndividualWithdrawals_afterSettingValues() {
+        IndividualYearlySummary ind1 = summary.getIndividualSummary("John");
+        IndividualYearlySummary ind2 = summary.getIndividualSummary("Jane");
+
+        ind1.setRmdWithdrawals(15000);
+        ind2.setRmdWithdrawals(8000);
+        assertEquals(23000, summary.sumIndividualRmdWithdrawals(), 0.001);
+
+        ind1.setQualifiedWithdrawals(10000);
+        ind2.setQualifiedWithdrawals(5000);
+        assertEquals(15000, summary.sumIndividualQualifiedWithdrawals(), 0.001);
+
+        ind1.setNonQualifiedWithdrawals(7000);
+        ind2.setNonQualifiedWithdrawals(3000);
+        assertEquals(10000, summary.sumIndividualNonQualifiedWithdrawals(), 0.001);
+
+        ind1.setRothWithdrawals(2000);
+        ind2.setRothWithdrawals(1000);
+        assertEquals(3000, summary.sumIndividualRothWithdrawals(), 0.001);
+    }
+
+    @Test
+    public void testValidateIndividualTotals_emptyIndividualSummaries() {
+        YearlySummary emptySummary = new YearlySummary(2025, 0, 0, 0, 0, 0, 0, 0, 0, 0, new HashMap<>());
+        assertTrue(emptySummary.validateIndividualTotals());
+    }
+
+    @Test
+    public void testValidateCashFlow_emptyWithNoActivity() {
+        YearlySummary emptySummary = new YearlySummary(2025, 0, 0, 0, 0, 0, 0, 0, 0, 0, new HashMap<>());
+        assertTrue(emptySummary.validateCashFlow());
+    }
 }
