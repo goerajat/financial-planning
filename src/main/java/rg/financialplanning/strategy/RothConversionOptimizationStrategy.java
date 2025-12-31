@@ -220,11 +220,11 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
             return;
         }
 
-        // Calculate current taxable income for this individual
-        double currentTaxableIncome = calculateIndividualTaxableIncome(individual);
+        // Calculate combined taxable income from all individuals (for married filing jointly)
+        double combinedTaxableIncome = calculateCombinedTaxableIncome(summary);
 
-        // Calculate the tax cost of the conversion
-        double taxCost = calculateConversionTaxCost(amount, currentTaxableIncome);
+        // Calculate the tax cost of the conversion based on combined household income
+        double taxCost = calculateConversionTaxCost(amount, combinedTaxableIncome);
 
         // Reduce qualified assets and track withdrawal
         double currentQualified = individual.qualifiedAssets();

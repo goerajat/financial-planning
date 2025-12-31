@@ -18,15 +18,18 @@ import java.util.Collection;
  *
  * This strategy calculates the net income after all taxes and compares it to expenses.
  *
- * Net income calculation:
+ * Net income calculation (cash flow basis):
  * - Total income (wages, etc.)
  * + RMD withdrawals (taxable income from retirement accounts)
  * + Qualified withdrawals (taxable income from retirement accounts)
- * + 85% of Social Security benefits (taxable portion)
- * - Federal income tax
+ * + 100% of Social Security benefits (full amount received)
+ * - Federal income tax (calculated on taxable income with 85% SS)
  * - NJ state income tax
  * - Social Security tax
  * - Medicare tax
+ *
+ * Note: Taxes are calculated using 85% of Social Security as taxable income,
+ * but the full 100% of Social Security is included in cash flow calculations.
  *
  * If surplus (net income > expenses):
  * - Surplus is distributed equally to all individuals' non-qualified investment accounts
@@ -79,12 +82,12 @@ public class ExpenseManagementStrategy implements TaxOptimizationStrategy {
             return;
         }
 
-        // Calculate gross income (including taxable withdrawals)
-        double grossIncome = calculateGrossIncome(currentYearlySummary);
+        // Calculate gross taxable income (including taxable withdrawals and 85% of SS for tax purposes)
+        double grossTaxableIncome = calculateGrossIncome(currentYearlySummary);
 
-        // Calculate all taxes
-        double federalTax = federalTaxCalculator.calculateTax(grossIncome, filingStatus);
-        double stateTax = stateTaxCalculator.calculateTax(grossIncome, filingStatus);
+        // Calculate all taxes based on taxable income
+        double federalTax = federalTaxCalculator.calculateTax(grossTaxableIncome, filingStatus);
+        double stateTax = stateTaxCalculator.calculateTax(grossTaxableIncome, filingStatus);
 
         // Social Security and Medicare taxes are based on earned income only
         double earnedIncome = currentYearlySummary.totalIncome();
@@ -94,8 +97,11 @@ public class ExpenseManagementStrategy implements TaxOptimizationStrategy {
 
         double totalTaxes = federalTax + stateTax + socialSecurityTax + medicareTax + additionalMedicareTax;
 
-        // Calculate net income after taxes
-        double netIncomeAfterTaxes = grossIncome - totalTaxes;
+        // Calculate total cash income (includes FULL social security benefits, not just taxable portion)
+        double totalCashIncome = calculateTotalCashIncome(currentYearlySummary);
+
+        // Calculate net income after taxes (based on actual cash received, not taxable income)
+        double netIncomeAfterTaxes = totalCashIncome - totalTaxes;
 
         // Get total expenses
         double totalExpenses = currentYearlySummary.totalExpenses();
@@ -106,7 +112,7 @@ public class ExpenseManagementStrategy implements TaxOptimizationStrategy {
         if (surplus < 0) {
             // Deficit - need to withdraw from assets in order of priority
             double deficit = -surplus;
-            handleDeficit(currentYearlySummary, deficit, grossIncome);
+            handleDeficit(currentYearlySummary, deficit, grossTaxableIncome);
         } else if (surplus > 0) {
             // Distribute surplus equally among all individuals' non-qualified assets
             distributeSurplusToNonQualifiedAssets(currentYearlySummary, surplus);
@@ -118,7 +124,8 @@ public class ExpenseManagementStrategy implements TaxOptimizationStrategy {
 
     /**
      * Calculates the gross taxable income for the year.
-     * Includes earned income, RMD withdrawals, and qualified withdrawals.
+     * Includes earned income, RMD withdrawals, qualified withdrawals, and 85% of Social Security.
+     * Used for tax calculation purposes.
      *
      * @param summary the yearly summary
      * @return the gross taxable income
@@ -132,6 +139,25 @@ public class ExpenseManagementStrategy implements TaxOptimizationStrategy {
         double taxableSocialSecurity = summary.totalSocialSecurity() * 0.85;
 
         return totalIncome + rmdWithdrawals + qualifiedWithdrawals + taxableSocialSecurity;
+    }
+
+    /**
+     * Calculates the total cash income for the year.
+     * Includes earned income, RMD withdrawals, qualified withdrawals, and FULL Social Security benefits.
+     * Used for cash flow/surplus calculation purposes.
+     *
+     * @param summary the yearly summary
+     * @return the total cash income
+     */
+    private double calculateTotalCashIncome(YearlySummary summary) {
+        double totalIncome = summary.totalIncome();
+        double rmdWithdrawals = summary.rmdWithdrawals();
+        double qualifiedWithdrawals = summary.qualifiedWithdrawals();
+
+        // Full Social Security benefits (100%) for cash flow purposes
+        double socialSecurityBenefits = summary.totalSocialSecurity();
+
+        return totalIncome + rmdWithdrawals + qualifiedWithdrawals + socialSecurityBenefits;
     }
 
     /**
@@ -482,10 +508,11 @@ public class ExpenseManagementStrategy implements TaxOptimizationStrategy {
             return 0.0;
         }
 
-        double grossIncome = calculateGrossIncome(summary);
+        // Use taxable income for tax calculation
+        double grossTaxableIncome = calculateGrossIncome(summary);
 
-        double federalTax = federalTaxCalculator.calculateTax(grossIncome, filingStatus);
-        double stateTax = stateTaxCalculator.calculateTax(grossIncome, filingStatus);
+        double federalTax = federalTaxCalculator.calculateTax(grossTaxableIncome, filingStatus);
+        double stateTax = stateTaxCalculator.calculateTax(grossTaxableIncome, filingStatus);
 
         double earnedIncome = summary.totalIncome();
         double socialSecurityTax = socialSecurityTaxCalculator.calculateSocialSecurityTax(earnedIncome, false);
@@ -493,7 +520,10 @@ public class ExpenseManagementStrategy implements TaxOptimizationStrategy {
         double additionalMedicareTax = socialSecurityTaxCalculator.calculateAdditionalMedicareTax(earnedIncome, filingStatus);
 
         double totalTaxes = federalTax + stateTax + socialSecurityTax + medicareTax + additionalMedicareTax;
-        double netIncomeAfterTaxes = grossIncome - totalTaxes;
+
+        // Use total cash income (with full SS benefits) for net income calculation
+        double totalCashIncome = calculateTotalCashIncome(summary);
+        double netIncomeAfterTaxes = totalCashIncome - totalTaxes;
 
         return netIncomeAfterTaxes - summary.totalExpenses();
     }
