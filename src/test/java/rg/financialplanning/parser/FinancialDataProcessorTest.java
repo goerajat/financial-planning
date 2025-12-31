@@ -548,15 +548,11 @@ public class FinancialDataProcessorTest {
 
         String csvContent = Files.readString(outputFile.toPath());
 
-        // Check age rows exist with correct format
-        assertTrue(csvContent.contains("John Age"));
-        assertTrue(csvContent.contains("Jane Age"));
+        // Check age rows exist with correct format (just the age number, not Name(age))
         // John born 1960, should be 64 in 2024 and 65 in 2025
-        assertTrue(csvContent.contains("John(64)"));
-        assertTrue(csvContent.contains("John(65)"));
+        assertTrue(csvContent.contains("John Age,64,65"));
         // Jane born 1965, should be 59 in 2024 and 60 in 2025
-        assertTrue(csvContent.contains("Jane(59)"));
-        assertTrue(csvContent.contains("Jane(60)"));
+        assertTrue(csvContent.contains("Jane Age,59,60"));
     }
 
     @Test

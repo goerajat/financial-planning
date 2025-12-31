@@ -349,16 +349,28 @@ public class FinancialDataProcessor {
      * Exports yearly summaries to a CSV file.
      *
      * The CSV format has years as columns and the following rows:
+     * - {Person Name} Age (for each individual)
      * - Total Income, {Person Name} Income (for each individual)
      * - Total RMD Withdrawals, {Person Name} RMD Withdrawals (for each individual)
      * - Total Qualified Withdrawals, {Person Name} Qualified Withdrawals (for each individual)
      * - Total Non-Qualified Withdrawals, {Person Name} Non-Qualified Withdrawals (for each individual)
+     * - Total Cash Withdrawals, {Person Name} Cash Withdrawals (for each individual)
+     * - Total Social Security Benefits, {Person Name} Social Security Benefits (for each individual)
+     * - Total Qualified Contributions, {Person Name} Qualified Contributions (for each individual)
+     * - Total Non-Qualified Contributions, {Person Name} Non-Qualified Contributions (for each individual)
+     * - Total Roth Contributions, {Person Name} Roth Contributions (for each individual)
      * - Total Federal Income Tax
      * - Total State Income Tax
      * - Total Capital Gains Tax
      * - Total Social Security Tax
      * - Total Medicare Tax
      * - Total Expenses
+     * - Total Qualified Assets, {Person Name} Qualified Assets (for each individual)
+     * - Total Non-Qualified Assets, {Person Name} Non-Qualified Assets (for each individual)
+     * - Total Roth Assets, {Person Name} Roth Assets (for each individual)
+     * - Total Cash
+     * - Total Real Estate
+     * - Total Life Insurance Benefits
      *
      * @param summaries the array of yearly summaries to export
      * @param filePath the path to write the CSV file
@@ -423,11 +435,39 @@ public class FinancialDataProcessor {
                         ind -> ind.nonQualifiedWithdrawals());
             }
 
+            // Cash Withdrawals section
+            writeTotalRow(writer, "Total Cash Withdrawals", summaries, YearlySummary::cashWithdrawals);
+            for (String name : allNames) {
+                writeIndividualRow(writer, name + " Cash Withdrawals", summaries, name,
+                        ind -> ind.cashWithdrawals());
+            }
+
             // Social Security Benefits section
             writeTotalRow(writer, "Total Social Security Benefits", summaries, YearlySummary::totalSocialSecurity);
             for (String name : allNames) {
                 writeIndividualRow(writer, name + " Social Security Benefits", summaries, name,
                         ind -> ind.socialSecurityBenefits());
+            }
+
+            // Qualified Contributions section
+            writeTotalRow(writer, "Total Qualified Contributions", summaries, YearlySummary::qualifiedContributions);
+            for (String name : allNames) {
+                writeIndividualRow(writer, name + " Qualified Contributions", summaries, name,
+                        ind -> ind.qualifiedContributions());
+            }
+
+            // Non-Qualified Contributions section
+            writeTotalRow(writer, "Total Non-Qualified Contributions", summaries, YearlySummary::nonQualifiedContributions);
+            for (String name : allNames) {
+                writeIndividualRow(writer, name + " Non-Qualified Contributions", summaries, name,
+                        ind -> ind.nonQualifiedContributions());
+            }
+
+            // Roth Contributions section
+            writeTotalRow(writer, "Total Roth Contributions", summaries, YearlySummary::rothContributions);
+            for (String name : allNames) {
+                writeIndividualRow(writer, name + " Roth Contributions", summaries, name,
+                        ind -> ind.rothContributions());
             }
 
             // Tax section
@@ -439,6 +479,36 @@ public class FinancialDataProcessor {
 
             // Expenses section
             writeTotalRow(writer, "Total Expenses", summaries, YearlySummary::totalExpenses);
+
+            // Qualified Assets section
+            writeTotalRow(writer, "Total Qualified Assets", summaries, YearlySummary::qualifiedAssets);
+            for (String name : allNames) {
+                writeIndividualRow(writer, name + " Qualified Assets", summaries, name,
+                        ind -> ind.qualifiedAssets());
+            }
+
+            // Non-Qualified Assets section
+            writeTotalRow(writer, "Total Non-Qualified Assets", summaries, YearlySummary::nonQualifiedAssets);
+            for (String name : allNames) {
+                writeIndividualRow(writer, name + " Non-Qualified Assets", summaries, name,
+                        ind -> ind.nonQualifiedAssets());
+            }
+
+            // Roth Assets section
+            writeTotalRow(writer, "Total Roth Assets", summaries, YearlySummary::rothAssets);
+            for (String name : allNames) {
+                writeIndividualRow(writer, name + " Roth Assets", summaries, name,
+                        ind -> ind.rothAssets());
+            }
+
+            // Cash section
+            writeTotalRow(writer, "Total Cash", summaries, YearlySummary::cash);
+
+            // Real Estate section
+            writeTotalRow(writer, "Total Real Estate", summaries, YearlySummary::realEstate);
+
+            // Life Insurance Benefits section
+            writeTotalRow(writer, "Total Life Insurance Benefits", summaries, YearlySummary::lifeInsuranceBenefits);
         }
     }
 
@@ -503,7 +573,7 @@ public class FinancialDataProcessor {
                     IndividualYearlySummary individual = summary.getIndividualSummary(name);
                     if (individual != null && individual.person() != null) {
                         int age = individual.person().getAgeInYear(summary.year());
-                        sb.append(",").append(name).append("(").append(age).append(")");
+                        sb.append(",").append(age);
                     } else {
                         sb.append(",");
                     }
