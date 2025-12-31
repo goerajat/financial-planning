@@ -1,12 +1,19 @@
 package rg.financialplanning.calculator;
 
 import rg.financialplanning.model.FilingStatus;
+import rg.financialplanning.model.YearlySummary;
 
 /**
  * Calculates federal income tax for tax year 2026.
  * Uses projected 2026 tax brackets based on inflation adjustments.
  */
-public class FederalTaxCalculator {
+public class FederalTaxCalculator implements TaxCalculator {
+
+    /**
+     * Percentage of Social Security benefits that is taxable for federal income tax purposes.
+     * For higher earners, up to 85% of Social Security benefits may be taxable.
+     */
+    private static final double SOCIAL_SECURITY_TAXABLE_PERCENTAGE = 0.85;
 
     // 2026 projected tax brackets for Single filers
     private static final double[] SINGLE_BRACKETS = {11_925, 48_475, 103_350, 197_300, 250_525, 626_350};
@@ -23,13 +30,27 @@ public class FederalTaxCalculator {
     // Tax rates corresponding to brackets
     private static final double[] TAX_RATES = {0.10, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37};
 
-    /**
-     * Calculates the federal income tax for the given taxable income and filing status.
-     *
-     * @param taxableIncome the federal taxable income
-     * @param filingStatus the filing status
-     * @return the calculated federal income tax
-     */
+    @Override
+    public double calculateTax(YearlySummary summary, FilingStatus filingStatus) {
+        if (summary == null) {
+            throw new IllegalArgumentException("Summary cannot be null");
+        }
+        double ordinaryIncome = calculateOrdinaryIncome(summary);
+        return calculateTax(ordinaryIncome, filingStatus);
+    }
+
+    @Override
+    public double calculateOrdinaryIncome(YearlySummary summary) {
+        if (summary == null) {
+            return 0;
+        }
+        double income = summary.totalIncome();
+        double rmdWithdrawals = summary.rmdWithdrawals();
+        double qualifiedWithdrawals = summary.qualifiedWithdrawals();
+        double taxableSocialSecurity = summary.totalSocialSecurity() * SOCIAL_SECURITY_TAXABLE_PERCENTAGE;
+        return income + rmdWithdrawals + qualifiedWithdrawals + taxableSocialSecurity;
+    }
+
     public double calculateTax(double taxableIncome, FilingStatus filingStatus) {
         if (taxableIncome < 0) {
             throw new IllegalArgumentException("Taxable income cannot be negative");
@@ -37,11 +58,9 @@ public class FederalTaxCalculator {
         if (filingStatus == null) {
             throw new IllegalArgumentException("Filing status cannot be null");
         }
-
         if (taxableIncome == 0) {
             return 0;
         }
-
         double[] brackets = getBrackets(filingStatus);
         return calculateTaxWithBrackets(taxableIncome, brackets);
     }
@@ -58,7 +77,6 @@ public class FederalTaxCalculator {
     private double calculateTaxWithBrackets(double taxableIncome, double[] brackets) {
         double tax = 0;
         double previousBracket = 0;
-
         for (int i = 0; i < brackets.length; i++) {
             if (taxableIncome <= brackets[i]) {
                 tax += (taxableIncome - previousBracket) * TAX_RATES[i];
@@ -67,19 +85,10 @@ public class FederalTaxCalculator {
             tax += (brackets[i] - previousBracket) * TAX_RATES[i];
             previousBracket = brackets[i];
         }
-
-        // Income exceeds highest bracket - apply top rate
         tax += (taxableIncome - previousBracket) * TAX_RATES[TAX_RATES.length - 1];
         return tax;
     }
 
-    /**
-     * Calculates the effective tax rate for the given taxable income and filing status.
-     *
-     * @param taxableIncome the federal taxable income
-     * @param filingStatus the filing status
-     * @return the effective tax rate as a decimal (e.g., 0.22 for 22%)
-     */
     public double getEffectiveTaxRate(double taxableIncome, FilingStatus filingStatus) {
         if (taxableIncome <= 0) {
             return 0;
@@ -87,37 +96,19 @@ public class FederalTaxCalculator {
         return calculateTax(taxableIncome, filingStatus) / taxableIncome;
     }
 
-    /**
-     * Returns the marginal tax rate for the given taxable income and filing status.
-     *
-     * @param taxableIncome the federal taxable income
-     * @param filingStatus the filing status
-     * @return the marginal tax rate as a decimal (e.g., 0.22 for 22%)
-     */
     public double getMarginalTaxRate(double taxableIncome, FilingStatus filingStatus) {
         if (taxableIncome <= 0) {
             return TAX_RATES[0];
         }
-
         double[] brackets = getBrackets(filingStatus);
-
         for (int i = 0; i < brackets.length; i++) {
             if (taxableIncome <= brackets[i]) {
                 return TAX_RATES[i];
             }
         }
-
         return TAX_RATES[TAX_RATES.length - 1];
     }
 
-    /**
-     * Calculates the pre-tax (gross) income required to achieve a given post-tax (net) amount.
-     * This is the inverse of the tax calculation.
-     *
-     * @param postTaxAmount the desired after-tax amount
-     * @param filingStatus the filing status
-     * @return the pre-tax income needed to achieve the post-tax amount
-     */
     public double calculatePreTaxAmount(double postTaxAmount, FilingStatus filingStatus) {
         if (postTaxAmount < 0) {
             throw new IllegalArgumentException("Post-tax amount cannot be negative");
@@ -125,11 +116,9 @@ public class FederalTaxCalculator {
         if (filingStatus == null) {
             throw new IllegalArgumentException("Filing status cannot be null");
         }
-
         if (postTaxAmount == 0) {
             return 0;
         }
-
         double[] brackets = getBrackets(filingStatus);
         return calculatePreTaxWithBrackets(postTaxAmount, brackets);
     }
@@ -137,24 +126,15 @@ public class FederalTaxCalculator {
     private double calculatePreTaxWithBrackets(double postTaxAmount, double[] brackets) {
         double cumulativeTax = 0;
         double previousBracket = 0;
-
         for (int i = 0; i < brackets.length; i++) {
             double bracketTax = (brackets[i] - previousBracket) * TAX_RATES[i];
             double postTaxAtBracketEnd = brackets[i] - (cumulativeTax + bracketTax);
-
             if (postTaxAmount <= postTaxAtBracketEnd) {
-                // Post-tax amount falls within this bracket
-                // Solve: postTax = preTax - cumulativeTax - (preTax - previousBracket) * rate
-                // postTax = preTax * (1 - rate) - cumulativeTax + previousBracket * rate
-                // preTax = (postTax + cumulativeTax - previousBracket * rate) / (1 - rate)
                 return (postTaxAmount + cumulativeTax - previousBracket * TAX_RATES[i]) / (1 - TAX_RATES[i]);
             }
-
             cumulativeTax += bracketTax;
             previousBracket = brackets[i];
         }
-
-        // Post-tax amount exceeds all brackets - use top rate
         double topRate = TAX_RATES[TAX_RATES.length - 1];
         return (postTaxAmount + cumulativeTax - previousBracket * topRate) / (1 - topRate);
     }

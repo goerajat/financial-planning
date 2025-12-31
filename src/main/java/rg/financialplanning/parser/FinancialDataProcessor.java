@@ -187,12 +187,17 @@ public class FinancialDataProcessor {
             int year = earliestStartYear + i;
             YearlySummary previousSummary = i > 0 ? summaries[i - 1] : null;
 
-            // Income, Expenses, and Social Security: Calculate from active entries
+            // Income, Expenses, Social Security, and Contributions: Calculate from active entries
             double totalIncome = 0;
             double totalExpenses = 0;
             double totalSocialSecurity = 0;
+            double rothContributions = 0;
+            double qualifiedContributions = 0;
+            double lifeInsuranceContributions = 0;
             Map<String, Double> incomeByName = new HashMap<>();
             Map<String, Double> socialSecurityByName = new HashMap<>();
+            Map<String, Double> rothContributionsByName = new HashMap<>();
+            Map<String, Double> qualifiedContributionsByName = new HashMap<>();
 
             for (FinancialEntry entry : entries) {
                 if (entry.isActiveInYear(year)) {
@@ -210,6 +215,15 @@ public class FinancialDataProcessor {
                             totalSocialSecurity += calculatedValue;
                             socialSecurityByName.merge(name, calculatedValue, Double::sum);
                         }
+                        case ROTH_CONTRIBUTION -> {
+                            rothContributions += calculatedValue;
+                            rothContributionsByName.merge(name, calculatedValue, Double::sum);
+                        }
+                        case QUALIFIED_CONTRIBUTION -> {
+                            qualifiedContributions += calculatedValue;
+                            qualifiedContributionsByName.merge(name, calculatedValue, Double::sum);
+                        }
+                        case LIFE_INSURANCE_CONTRIBUTION -> lifeInsuranceContributions += calculatedValue;
                         default -> { /* handled below */ }
                     }
                 }
@@ -218,16 +232,22 @@ public class FinancialDataProcessor {
             // Other item types: Compound from previous year + add new entries (new behavior)
             double qualifiedAssets = applyPercentageIncrease(previousSummary != null ? previousSummary.qualifiedAssets() : 0,
                     percentageRates.getOrDefault(ItemType.QUALIFIED, 0.0));
+            // Add qualified contributions to the balance
+            qualifiedAssets += qualifiedContributions;
             double nonQualifiedAssets = applyPercentageIncrease(previousSummary != null ? previousSummary.nonQualifiedAssets() : 0,
                     percentageRates.getOrDefault(ItemType.NON_QUALIFIED, 0.0));
             double rothAssets = applyPercentageIncrease(previousSummary != null ? previousSummary.rothAssets() : 0,
                     percentageRates.getOrDefault(ItemType.ROTH, 0.0));
+            // Add roth contributions to the balance
+            rothAssets += rothContributions;
             double cash = applyPercentageIncrease(previousSummary != null ? previousSummary.cash() : 0,
                     percentageRates.getOrDefault(ItemType.CASH, 0.0));
             double realEstate = applyPercentageIncrease(previousSummary != null ? previousSummary.realEstate() : 0,
                     percentageRates.getOrDefault(ItemType.REAL_ESTATE, 0.0));
             double lifeInsuranceBenefits = applyPercentageIncrease(previousSummary != null ? previousSummary.lifeInsuranceBenefits() : 0,
                     percentageRates.getOrDefault(ItemType.LIFE_INSURANCE_BENEFIT, 0.0));
+            // Add life insurance contributions to the balance
+            lifeInsuranceBenefits += lifeInsuranceContributions;
 
             Map<String, Double> qualifiedByName = new HashMap<>();
             Map<String, Double> nonQualifiedByName = new HashMap<>();
@@ -270,17 +290,23 @@ public class FinancialDataProcessor {
             allNames.addAll(nonQualifiedByName.keySet());
             allNames.addAll(rothByName.keySet());
             allNames.addAll(socialSecurityByName.keySet());
+            allNames.addAll(rothContributionsByName.keySet());
+            allNames.addAll(qualifiedContributionsByName.keySet());
 
             for (String name : allNames) {
                 Person person = personsByName != null ? personsByName.get(name) : null;
-                individualSummaries.put(name, new IndividualYearlySummary(
+                IndividualYearlySummary individual = new IndividualYearlySummary(
                         person, year,
                         incomeByName.getOrDefault(name, 0.0),
                         qualifiedByName.getOrDefault(name, 0.0),
                         nonQualifiedByName.getOrDefault(name, 0.0),
                         rothByName.getOrDefault(name, 0.0),
                         socialSecurityByName.getOrDefault(name, 0.0)
-                ));
+                );
+                // Set contributions from contribution entries
+                individual.setRothContributions(rothContributionsByName.getOrDefault(name, 0.0));
+                individual.setQualifiedContributions(qualifiedContributionsByName.getOrDefault(name, 0.0));
+                individualSummaries.put(name, individual);
             }
 
             summaries[i] = new YearlySummary(year, totalIncome, totalExpenses,

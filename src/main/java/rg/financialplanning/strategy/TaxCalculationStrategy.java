@@ -118,7 +118,7 @@ public class TaxCalculationStrategy implements TaxOptimizationStrategy {
         // Social Security benefits - approximately 85% taxable for higher earners
         double taxableSocialSecurity = summary.totalSocialSecurity() * 0.85;
 
-        return totalIncome + rmdWithdrawals + qualifiedWithdrawals + taxableSocialSecurity;
+        return totalIncome + rmdWithdrawals + qualifiedWithdrawals + taxableSocialSecurity - summary.qualifiedContributions();
     }
 
     /**

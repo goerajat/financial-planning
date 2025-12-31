@@ -107,7 +107,7 @@ public class ExpenseManagementStrategy implements TaxOptimizationStrategy {
         double totalExpenses = currentYearlySummary.totalExpenses();
 
         // Calculate surplus
-        double surplus = netIncomeAfterTaxes - totalExpenses;
+        double surplus = netIncomeAfterTaxes - totalExpenses  - currentYearlySummary.rothContributions();
 
         if (surplus < 0) {
             // Deficit - need to withdraw from assets in order of priority
@@ -157,7 +157,7 @@ public class ExpenseManagementStrategy implements TaxOptimizationStrategy {
         // Full Social Security benefits (100%) for cash flow purposes
         double socialSecurityBenefits = summary.totalSocialSecurity();
 
-        return totalIncome + rmdWithdrawals + qualifiedWithdrawals + socialSecurityBenefits;
+        return totalIncome + rmdWithdrawals + qualifiedWithdrawals + socialSecurityBenefits - summary.qualifiedContributions();
     }
 
     /**

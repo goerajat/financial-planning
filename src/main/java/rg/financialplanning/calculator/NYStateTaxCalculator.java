@@ -4,18 +4,26 @@ import rg.financialplanning.model.FilingStatus;
 import rg.financialplanning.model.YearlySummary;
 
 /**
- * Calculates New Jersey state income tax for tax year 2026.
- * Uses projected 2026 tax brackets based on current NJ tax structure.
+ * Calculates New York state income tax for tax year 2026.
+ * Uses projected 2026 tax brackets based on current NY tax structure.
  */
-public class NJStateTaxCalculator implements TaxCalculator {
+public class NYStateTaxCalculator implements TaxCalculator {
 
-    // 2026 projected tax brackets for Single/Married Filing Separately
-    private static final double[] SINGLE_BRACKETS = {20_000, 35_000, 40_000, 75_000, 500_000, 1_000_000};
-    private static final double[] SINGLE_RATES = {0.014, 0.0175, 0.035, 0.05525, 0.0637, 0.0897, 0.1075};
+    // 2026 projected tax brackets for Single filers
+    private static final double[] SINGLE_BRACKETS = {8_500, 11_700, 13_900, 80_650, 215_400, 1_077_550, 5_000_000, 25_000_000};
+    private static final double[] SINGLE_RATES = {0.04, 0.045, 0.0525, 0.055, 0.06, 0.0685, 0.0965, 0.103, 0.109};
 
-    // 2026 projected tax brackets for Married Filing Jointly/Head of Household
-    private static final double[] MFJ_BRACKETS = {20_000, 50_000, 70_000, 80_000, 150_000, 500_000, 1_000_000};
-    private static final double[] MFJ_RATES = {0.014, 0.0175, 0.0245, 0.035, 0.05525, 0.0637, 0.0897, 0.1075};
+    // 2026 projected tax brackets for Married Filing Jointly
+    private static final double[] MFJ_BRACKETS = {17_150, 23_600, 27_900, 161_550, 323_200, 2_155_350, 5_000_000, 25_000_000};
+    private static final double[] MFJ_RATES = {0.04, 0.045, 0.0525, 0.055, 0.06, 0.0685, 0.0965, 0.103, 0.109};
+
+    // 2026 projected tax brackets for Married Filing Separately (half of MFJ)
+    private static final double[] MFS_BRACKETS = {8_500, 11_700, 13_900, 80_650, 161_550, 1_077_550, 2_500_000, 12_500_000};
+    private static final double[] MFS_RATES = {0.04, 0.045, 0.0525, 0.055, 0.06, 0.0685, 0.0965, 0.103, 0.109};
+
+    // 2026 projected tax brackets for Head of Household
+    private static final double[] HOH_BRACKETS = {12_800, 17_650, 20_900, 107_650, 269_300, 1_616_450, 5_000_000, 25_000_000};
+    private static final double[] HOH_RATES = {0.04, 0.045, 0.0525, 0.055, 0.06, 0.0685, 0.0965, 0.103, 0.109};
 
     @Override
     public double calculateTax(YearlySummary summary, FilingStatus filingStatus) {
@@ -27,15 +35,15 @@ public class NJStateTaxCalculator implements TaxCalculator {
     }
 
     /**
-     * Calculates the NJ ordinary/taxable income from a yearly summary.
-     * NJ taxable income includes:
+     * Calculates the NY ordinary/taxable income from a yearly summary.
+     * NY taxable income includes:
      * - Total income
      * - RMD withdrawals (fully taxable)
      * - Qualified withdrawals (fully taxable)
-     * Note: Social Security benefits are NOT taxable in New Jersey.
+     * Note: Social Security benefits are NOT taxable in New York.
      *
      * @param summary the yearly financial summary
-     * @return the calculated NJ taxable income
+     * @return the calculated NY taxable income
      */
     @Override
     public double calculateOrdinaryIncome(YearlySummary summary) {
@@ -45,7 +53,7 @@ public class NJStateTaxCalculator implements TaxCalculator {
         double income = summary.totalIncome();
         double rmdWithdrawals = summary.rmdWithdrawals();
         double qualifiedWithdrawals = summary.qualifiedWithdrawals();
-        // Social Security benefits are NOT taxable in NJ
+        // Social Security benefits are NOT taxable in NY
         return income + rmdWithdrawals + qualifiedWithdrawals;
     }
 
@@ -66,15 +74,19 @@ public class NJStateTaxCalculator implements TaxCalculator {
 
     private double[] getBrackets(FilingStatus filingStatus) {
         return switch (filingStatus) {
-            case SINGLE, MARRIED_FILING_SEPARATELY -> SINGLE_BRACKETS;
-            case MARRIED_FILING_JOINTLY, HEAD_OF_HOUSEHOLD -> MFJ_BRACKETS;
+            case SINGLE -> SINGLE_BRACKETS;
+            case MARRIED_FILING_JOINTLY -> MFJ_BRACKETS;
+            case MARRIED_FILING_SEPARATELY -> MFS_BRACKETS;
+            case HEAD_OF_HOUSEHOLD -> HOH_BRACKETS;
         };
     }
 
     private double[] getRates(FilingStatus filingStatus) {
         return switch (filingStatus) {
-            case SINGLE, MARRIED_FILING_SEPARATELY -> SINGLE_RATES;
-            case MARRIED_FILING_JOINTLY, HEAD_OF_HOUSEHOLD -> MFJ_RATES;
+            case SINGLE -> SINGLE_RATES;
+            case MARRIED_FILING_JOINTLY -> MFJ_RATES;
+            case MARRIED_FILING_SEPARATELY -> MFS_RATES;
+            case HEAD_OF_HOUSEHOLD -> HOH_RATES;
         };
     }
 
@@ -112,36 +124,5 @@ public class NJStateTaxCalculator implements TaxCalculator {
             }
         }
         return rates[rates.length - 1];
-    }
-
-    public double calculatePreTaxAmount(double postTaxAmount, FilingStatus filingStatus) {
-        if (postTaxAmount < 0) {
-            throw new IllegalArgumentException("Post-tax amount cannot be negative");
-        }
-        if (filingStatus == null) {
-            throw new IllegalArgumentException("Filing status cannot be null");
-        }
-        if (postTaxAmount == 0) {
-            return 0;
-        }
-        double[] brackets = getBrackets(filingStatus);
-        double[] rates = getRates(filingStatus);
-        return calculatePreTaxWithBrackets(postTaxAmount, brackets, rates);
-    }
-
-    private double calculatePreTaxWithBrackets(double postTaxAmount, double[] brackets, double[] rates) {
-        double cumulativeTax = 0;
-        double previousBracket = 0;
-        for (int i = 0; i < brackets.length; i++) {
-            double bracketTax = (brackets[i] - previousBracket) * rates[i];
-            double postTaxAtBracketEnd = brackets[i] - (cumulativeTax + bracketTax);
-            if (postTaxAmount <= postTaxAtBracketEnd) {
-                return (postTaxAmount + cumulativeTax - previousBracket * rates[i]) / (1 - rates[i]);
-            }
-            cumulativeTax += bracketTax;
-            previousBracket = brackets[i];
-        }
-        double topRate = rates[rates.length - 1];
-        return (postTaxAmount + cumulativeTax - previousBracket * topRate) / (1 - topRate);
     }
 }
