@@ -33,7 +33,7 @@ public class CompositeTaxOptimizationStrategyTest {
             totalRoth += ind.rothAssets();
             totalSS += ind.socialSecurityBenefits();
         }
-        return new YearlySummary(year, income, expenses, totalQualified, totalNonQualified, totalRoth, 50000, 0, 0, totalSS, individuals);
+        return new YearlySummary(year, income, expenses, totalQualified, totalNonQualified, totalRoth, 50000, 0, 0, totalSS, 0, individuals);
     }
 
     // ===== Constructor tests =====

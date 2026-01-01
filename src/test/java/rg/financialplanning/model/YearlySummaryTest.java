@@ -25,7 +25,7 @@ public class YearlySummaryTest {
         individualSummaries.put("John", ind1);
         individualSummaries.put("Jane", ind2);
 
-        summary = new YearlySummary(2025, 180000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, individualSummaries);
+        summary = new YearlySummary(2025, 180000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, 0, individualSummaries);
     }
 
     @Test
@@ -74,7 +74,7 @@ public class YearlySummaryTest {
 
     @Test
     public void testConstructor_nullIndividualSummaries() {
-        YearlySummary nullSummary = new YearlySummary(2025, 100000, 50000, 500000, 200000, 100000, 50000, 300000, 100000, 30000, null);
+        YearlySummary nullSummary = new YearlySummary(2025, 100000, 50000, 500000, 200000, 100000, 50000, 300000, 100000, 30000, 0, null);
         assertNotNull(nullSummary.individualSummaries());
         assertTrue(nullSummary.individualSummaries().isEmpty());
     }
@@ -290,25 +290,25 @@ public class YearlySummaryTest {
 
     @Test
     public void testEquals_sameValues() {
-        YearlySummary summary2 = new YearlySummary(2025, 180000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, individualSummaries);
+        YearlySummary summary2 = new YearlySummary(2025, 180000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, 0, individualSummaries);
         assertEquals(summary, summary2);
     }
 
     @Test
     public void testEquals_differentYear() {
-        YearlySummary summary2 = new YearlySummary(2026, 180000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, individualSummaries);
+        YearlySummary summary2 = new YearlySummary(2026, 180000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, 0, individualSummaries);
         assertNotEquals(summary, summary2);
     }
 
     @Test
     public void testEquals_differentIncome() {
-        YearlySummary summary2 = new YearlySummary(2025, 200000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, individualSummaries);
+        YearlySummary summary2 = new YearlySummary(2025, 200000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, 0, individualSummaries);
         assertNotEquals(summary, summary2);
     }
 
     @Test
     public void testHashCode_sameForEqualObjects() {
-        YearlySummary summary2 = new YearlySummary(2025, 180000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, individualSummaries);
+        YearlySummary summary2 = new YearlySummary(2025, 180000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, 0, individualSummaries);
         assertEquals(summary.hashCode(), summary2.hashCode());
     }
 
@@ -362,14 +362,14 @@ public class YearlySummaryTest {
     @Test
     public void testValidateIndividualTotals_invalidWhenIncomeMismatch() {
         // Create summary with mismatched income total
-        YearlySummary mismatchedSummary = new YearlySummary(2025, 200000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, individualSummaries);
+        YearlySummary mismatchedSummary = new YearlySummary(2025, 200000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, 0, individualSummaries);
         assertFalse(mismatchedSummary.validateIndividualTotals());
     }
 
     @Test
     public void testValidateIndividualTotals_invalidWhenSocialSecurityMismatch() {
         // Create summary with mismatched social security total
-        YearlySummary mismatchedSummary = new YearlySummary(2025, 180000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 70000, individualSummaries);
+        YearlySummary mismatchedSummary = new YearlySummary(2025, 180000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 70000, 0, individualSummaries);
         assertFalse(mismatchedSummary.validateIndividualTotals());
     }
 
@@ -397,7 +397,7 @@ public class YearlySummaryTest {
 
     @Test
     public void testGetIndividualTotalsValidationDetails_showsMismatchDetails() {
-        YearlySummary mismatchedSummary = new YearlySummary(2025, 200000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, individualSummaries);
+        YearlySummary mismatchedSummary = new YearlySummary(2025, 200000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, 0, individualSummaries);
         String result = mismatchedSummary.getIndividualTotalsValidationDetails();
         assertTrue(result.contains("Income mismatch"));
     }
@@ -511,7 +511,7 @@ public class YearlySummaryTest {
     @Test
     public void testValidate_invalidWhenIndividualTotalsFail() {
         // Create mismatched income
-        YearlySummary mismatchedSummary = new YearlySummary(2025, 200000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, individualSummaries);
+        YearlySummary mismatchedSummary = new YearlySummary(2025, 200000, 120000, 900000, 350000, 180000, 50000, 500000, 200000, 55000, 0, individualSummaries);
         assertFalse(mismatchedSummary.validate());
     }
 
@@ -549,13 +549,13 @@ public class YearlySummaryTest {
 
     @Test
     public void testValidateIndividualTotals_emptyIndividualSummaries() {
-        YearlySummary emptySummary = new YearlySummary(2025, 0, 0, 0, 0, 0, 0, 0, 0, 0, new HashMap<>());
+        YearlySummary emptySummary = new YearlySummary(2025, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, new HashMap<>());
         assertTrue(emptySummary.validateIndividualTotals());
     }
 
     @Test
     public void testValidateCashFlow_emptyWithNoActivity() {
-        YearlySummary emptySummary = new YearlySummary(2025, 0, 0, 0, 0, 0, 0, 0, 0, 0, new HashMap<>());
+        YearlySummary emptySummary = new YearlySummary(2025, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, new HashMap<>());
         assertTrue(emptySummary.validateCashFlow());
     }
 }

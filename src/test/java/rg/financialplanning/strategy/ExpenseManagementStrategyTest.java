@@ -33,7 +33,7 @@ public class ExpenseManagementStrategyTest {
             totalRoth += ind.rothAssets();
             totalSS += ind.socialSecurityBenefits();
         }
-        return new YearlySummary(year, income, expenses, totalQualified, totalNonQualified, totalRoth, 50000, 0, 0, totalSS, individuals);
+        return new YearlySummary(year, income, expenses, totalQualified, totalNonQualified, totalRoth, 50000, 0, 0, totalSS, 0, individuals);
     }
 
     // ===== Constructor tests =====
@@ -191,7 +191,7 @@ public class ExpenseManagementStrategyTest {
         individuals.put("John", individual);
 
         // Create summary with cash
-        YearlySummary current = new YearlySummary(2025, 50000, 300000, 10000, 10000, 10000, 100000, 0, 0, 0, individuals);
+        YearlySummary current = new YearlySummary(2025, 50000, 300000, 10000, 10000, 10000, 100000, 0, 0, 0, 0, individuals);
 
         double originalCash = current.cash();
         strategy.optimize(null, current);
@@ -210,7 +210,7 @@ public class ExpenseManagementStrategyTest {
         individuals.put("John", individual);
 
         // Very high expenses, insufficient assets
-        YearlySummary current = new YearlySummary(2025, 0, 500000, 10000, 10000, 10000, 10000, 0, 0, 0, individuals);
+        YearlySummary current = new YearlySummary(2025, 0, 500000, 10000, 10000, 10000, 10000, 0, 0, 0, 0, individuals);
         strategy.optimize(null, current);
 
         // Should track remaining deficit

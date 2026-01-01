@@ -33,7 +33,7 @@ public class TaxCalculationStrategyTest {
             totalRoth += ind.rothAssets();
             totalSS += ind.socialSecurityBenefits();
         }
-        return new YearlySummary(year, income, expenses, totalQualified, totalNonQualified, totalRoth, 50000, 0, 0, totalSS, individuals);
+        return new YearlySummary(year, income, expenses, totalQualified, totalNonQualified, totalRoth, 50000, 0, 0, totalSS, 0, individuals);
     }
 
     // ===== Constructor tests =====
@@ -200,7 +200,7 @@ public class TaxCalculationStrategyTest {
         individuals.put("John", individual);
 
         // Create summary with Social Security
-        YearlySummary current = new YearlySummary(2025, 50000, 50000, 0, 0, 0, 50000, 0, 0, 30000, individuals);
+        YearlySummary current = new YearlySummary(2025, 50000, 50000, 0, 0, 0, 50000, 0, 0, 30000, 0, individuals);
         strategy.optimize(null, current);
 
         // Federal tax should be based on $50,000 income + 85% of $30,000 SS = $75,500

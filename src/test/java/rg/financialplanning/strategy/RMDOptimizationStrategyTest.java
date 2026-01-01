@@ -21,7 +21,7 @@ public class RMDOptimizationStrategyTest {
     }
 
     private YearlySummary createYearlySummary(int year, Map<String, IndividualYearlySummary> individuals) {
-        return new YearlySummary(year, 0, 0, 0, 0, 0, 0, 0, 0, 0, individuals);
+        return new YearlySummary(year, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, individuals);
     }
 
     // ===== optimize tests =====

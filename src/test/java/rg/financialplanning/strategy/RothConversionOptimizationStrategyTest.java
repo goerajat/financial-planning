@@ -28,7 +28,7 @@ public class RothConversionOptimizationStrategyTest {
             totalQualified += ind.qualifiedAssets();
             totalRoth += ind.rothAssets();
         }
-        return new YearlySummary(year, 0, 0, totalQualified, 0, totalRoth, 0, 0, 0, 0, individuals);
+        return new YearlySummary(year, 0, 0, totalQualified, 0, totalRoth, 0, 0, 0, 0, 0, individuals);
     }
 
     // ===== Constructor tests =====

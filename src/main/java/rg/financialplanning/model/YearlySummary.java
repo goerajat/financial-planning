@@ -37,6 +37,7 @@ public class YearlySummary {
                          double qualifiedAssets, double nonQualifiedAssets,
                          double rothAssets, double cash, double realEstate,
                          double lifeInsuranceBenefits, double totalSocialSecurity,
+                         double rothContributions,
                          Map<String, IndividualYearlySummary> individualSummaries) {
         this.year = year;
         this.totalIncome = totalIncome;
@@ -53,7 +54,7 @@ public class YearlySummary {
         this.nonQualifiedWithdrawals = 0.0;
         this.rothWithdrawals = 0.0;
         this.rmdWithdrawals = 0.0;
-        this.rothContributions = 0.0;
+        this.rothContributions = rothContributions;
         this.qualifiedContributions = 0.0;
         this.nonQualifiedContributions = 0.0;
         this.cashWithdrawals = 0.0;

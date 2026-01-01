@@ -311,7 +311,7 @@ public class FinancialDataProcessor {
 
             summaries[i] = new YearlySummary(year, totalIncome, totalExpenses,
                     qualifiedAssets, nonQualifiedAssets, rothAssets, cash, realEstate,
-                    lifeInsuranceBenefits, totalSocialSecurity, individualSummaries);
+                    lifeInsuranceBenefits, totalSocialSecurity, rothContributions, individualSummaries);
 
             // Apply tax optimization strategy after creating the summary
             if (taxOptimizationStrategy != null) {
