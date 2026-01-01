@@ -32,6 +32,8 @@ public class YearlySummary {
     private double capitalGainsTax;
     private double socialSecurityTax;
     private double medicareTax;
+    private double mortgagePayment;
+    private double mortgageBalance;
 
     public YearlySummary(int year, double totalIncome, double totalExpenses,
                          double qualifiedAssets, double nonQualifiedAssets,
@@ -64,6 +66,8 @@ public class YearlySummary {
         this.capitalGainsTax = 0.0;
         this.socialSecurityTax = 0.0;
         this.medicareTax = 0.0;
+        this.mortgagePayment = 0.0;
+        this.mortgageBalance = 0.0;
     }
 
     public int year() {
@@ -249,6 +253,22 @@ public class YearlySummary {
         this.medicareTax = medicareTax;
     }
 
+    public double mortgagePayment() {
+        return mortgagePayment;
+    }
+
+    public void setMortgagePayment(double mortgagePayment) {
+        this.mortgagePayment = mortgagePayment;
+    }
+
+    public double mortgageBalance() {
+        return mortgageBalance;
+    }
+
+    public void setMortgageBalance(double mortgageBalance) {
+        this.mortgageBalance = mortgageBalance;
+    }
+
     public double totalTaxes() {
         return federalIncomeTax + stateIncomeTax + capitalGainsTax + socialSecurityTax + medicareTax;
     }
@@ -423,10 +443,10 @@ public class YearlySummary {
     }
 
     /**
-     * Calculates total cash outflows: expenses + taxes + all contributions.
+     * Calculates total cash outflows: expenses + taxes + all contributions + mortgage payment.
      */
     public double totalCashOutflows() {
-        return totalExpenses + totalTaxes() + rothContributions + qualifiedContributions + nonQualifiedContributions;
+        return totalExpenses + totalTaxes() + rothContributions + qualifiedContributions + nonQualifiedContributions + mortgagePayment;
     }
 
     /**
@@ -475,6 +495,7 @@ public class YearlySummary {
         sb.append(String.format("  Roth Contributions: %.2f%n", rothContributions));
         sb.append(String.format("  Qualified Contributions: %.2f%n", qualifiedContributions));
         sb.append(String.format("  Non-Qualified Contributions: %.2f%n", nonQualifiedContributions));
+        sb.append(String.format("  Mortgage Payment: %.2f%n", mortgagePayment));
         sb.append(String.format("Deficit: %.2f%n", deficit));
         sb.append(String.format("Difference (should be 0): %.2f%n", difference));
         sb.append(Math.abs(difference) < EPSILON ? "Status: VALID" : "Status: INVALID");
@@ -520,6 +541,8 @@ public class YearlySummary {
                 Double.compare(that.capitalGainsTax, capitalGainsTax) == 0 &&
                 Double.compare(that.socialSecurityTax, socialSecurityTax) == 0 &&
                 Double.compare(that.medicareTax, medicareTax) == 0 &&
+                Double.compare(that.mortgagePayment, mortgagePayment) == 0 &&
+                Double.compare(that.mortgageBalance, mortgageBalance) == 0 &&
                 Objects.equals(individualSummaries, that.individualSummaries);
     }
 
@@ -531,7 +554,7 @@ public class YearlySummary {
                 rothWithdrawals, rmdWithdrawals, rothContributions, qualifiedContributions,
                 nonQualifiedContributions, cashWithdrawals, deficit,
                 federalIncomeTax, stateIncomeTax, capitalGainsTax, socialSecurityTax, medicareTax,
-                individualSummaries);
+                mortgagePayment, mortgageBalance, individualSummaries);
     }
 
     @Override
@@ -539,12 +562,13 @@ public class YearlySummary {
         return String.format("Year %d: Income=%.2f, Expenses=%.2f, Qualified=%.2f, NonQualified=%.2f, Roth=%.2f, " +
                 "Cash=%.2f, RealEstate=%.2f, LifeIns=%.2f, SS=%.2f, QualWd=%.2f, NonQualWd=%.2f, RothWd=%.2f, RMD=%.2f, " +
                 "RothContrib=%.2f, QualContrib=%.2f, NonQualContrib=%.2f, CashWd=%.2f, Deficit=%.2f, " +
-                "FedTax=%.2f, StateTax=%.2f, CapGainsTax=%.2f, SSTax=%.2f, MedicareTax=%.2f, Net=%.2f",
+                "FedTax=%.2f, StateTax=%.2f, CapGainsTax=%.2f, SSTax=%.2f, MedicareTax=%.2f, " +
+                "MortgagePmt=%.2f, MortgageBal=%.2f, Net=%.2f",
             year, totalIncome, totalExpenses, qualifiedAssets, nonQualifiedAssets, rothAssets, cash, realEstate,
             lifeInsuranceBenefits, totalSocialSecurity, qualifiedWithdrawals, nonQualifiedWithdrawals, rothWithdrawals,
             rmdWithdrawals, rothContributions, qualifiedContributions, nonQualifiedContributions,
             cashWithdrawals, deficit, federalIncomeTax, stateIncomeTax, capitalGainsTax, socialSecurityTax, medicareTax,
-            netIncome());
+            mortgagePayment, mortgageBalance, netIncome());
     }
 
     public void replan(YearlySummary previousYearlySummary) {

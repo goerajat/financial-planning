@@ -1,5 +1,6 @@
 package rg.financialplanning.parser;
 
+import rg.financialplanning.calculator.MortgageCalculator;
 import rg.financialplanning.model.FinancialEntry;
 import rg.financialplanning.model.IndividualYearlySummary;
 import rg.financialplanning.model.ItemType;
@@ -352,9 +353,35 @@ public class FinancialDataProcessor {
                 individual.setQualifiedAssets(individual.qualifiedAssets() + qualifiedContrib);
             }
 
+            // Calculate mortgage payment and balance
+            double mortgagePayment = 0;
+            double mortgageBalance = 0;
+            MortgageCalculator mortgageCalculator = new MortgageCalculator();
+
+            for (FinancialEntry entry : entries) {
+                if (entry.item() == ItemType.MORTGAGE && entry.isActiveInYear(year)) {
+                    double principal = entry.value();
+                    double interestRate = percentageRates.getOrDefault(ItemType.MORTGAGE, 0.0);
+                    int termYears = entry.endYear() - entry.startYear() + 1;
+                    int yearsElapsed = year - entry.startYear();
+
+                    // Calculate annual payment
+                    double annualPayment = mortgageCalculator.calculateAnnualPayment(principal, interestRate, termYears);
+                    mortgagePayment += annualPayment;
+
+                    // Calculate remaining balance at end of this year (after payment)
+                    double remainingBalance = mortgageCalculator.calculateRemainingBalance(principal, interestRate, termYears, yearsElapsed + 1);
+                    mortgageBalance += remainingBalance;
+                }
+            }
+
             summaries[i] = new YearlySummary(year, totalIncome, totalExpenses,
                     qualifiedAssets, nonQualifiedAssets, rothAssets, cash, realEstate,
                     lifeInsuranceBenefits, totalSocialSecurity, rothContributions, individualSummaries);
+
+            // Set mortgage payment and balance
+            summaries[i].setMortgagePayment(mortgagePayment);
+            summaries[i].setMortgageBalance(mortgageBalance);
 
             // Apply tax optimization strategy after creating the summary
             if (taxOptimizationStrategy != null) {
@@ -595,6 +622,10 @@ public class FinancialDataProcessor {
 
             // Life Insurance Benefits section
             writeTotalRow(writer, "Total Life Insurance Benefits", summaries, YearlySummary::lifeInsuranceBenefits);
+
+            // Mortgage section
+            writeTotalRow(writer, "Total Mortgage Payment", summaries, YearlySummary::mortgagePayment);
+            writeTotalRow(writer, "Outstanding Mortgage Balance", summaries, YearlySummary::mortgageBalance);
 
             // Cash Flow section
             writeTotalRow(writer, "Total Cash Inflows", summaries, YearlySummary::totalCashInflows);
