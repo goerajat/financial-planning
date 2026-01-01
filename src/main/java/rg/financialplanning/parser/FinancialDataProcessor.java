@@ -354,24 +354,49 @@ public class FinancialDataProcessor {
             }
 
             // Calculate mortgage payment and balance
+            // Input: value = outstanding mortgage amount, description = fixed annual payment
+            // Interest rate from percentages CSV, balance tracked year-over-year
             double mortgagePayment = 0;
             double mortgageBalance = 0;
             MortgageCalculator mortgageCalculator = new MortgageCalculator();
 
             for (FinancialEntry entry : entries) {
                 if (entry.item() == ItemType.MORTGAGE && entry.isActiveInYear(year)) {
-                    double principal = entry.value();
                     double interestRate = percentageRates.getOrDefault(ItemType.MORTGAGE, 0.0);
-                    int termYears = entry.endYear() - entry.startYear() + 1;
-                    int yearsElapsed = year - entry.startYear();
 
-                    // Calculate annual payment
-                    double annualPayment = mortgageCalculator.calculateAnnualPayment(principal, interestRate, termYears);
-                    mortgagePayment += annualPayment;
+                    // Parse fixed annual payment from description
+                    double fixedAnnualPayment = 0;
+                    if (entry.description() != null && !entry.description().isBlank()) {
+                        try {
+                            fixedAnnualPayment = Double.parseDouble(entry.description().trim());
+                        } catch (NumberFormatException e) {
+                            // If description is not a number, default to 0
+                        }
+                    }
 
-                    // Calculate remaining balance at end of this year (after payment)
-                    double remainingBalance = mortgageCalculator.calculateRemainingBalance(principal, interestRate, termYears, yearsElapsed + 1);
-                    mortgageBalance += remainingBalance;
+                    // Get the starting balance (from entry value) or previous year's balance
+                    double startingBalance;
+                    if (year == entry.startYear()) {
+                        // First year - use the initial outstanding amount from entry
+                        startingBalance = entry.value();
+                    } else if (previousSummary != null) {
+                        // Subsequent years - use previous year's ending balance
+                        startingBalance = previousSummary.mortgageBalance();
+                    } else {
+                        startingBalance = entry.value();
+                    }
+
+                    // Calculate interest for this year
+                    double interestPortion = mortgageCalculator.calculateInterestPortion(startingBalance, interestRate);
+
+                    // Principal paid = payment - interest
+                    double principalPortion = fixedAnnualPayment - interestPortion;
+
+                    // New balance = old balance - principal paid (don't go below 0)
+                    double endingBalance = Math.max(0, startingBalance - principalPortion);
+
+                    mortgagePayment += fixedAnnualPayment;
+                    mortgageBalance = endingBalance;
                 }
             }
 
