@@ -249,11 +249,38 @@ public class FinancialDataProcessor {
             // Add life insurance contributions to the balance
             lifeInsuranceBenefits += lifeInsuranceContributions;
 
-            Map<String, Double> qualifiedByName = new HashMap<>();
-            Map<String, Double> nonQualifiedByName = new HashMap<>();
-            Map<String, Double> rothByName = new HashMap<>();
+            // Build individual summaries by carrying forward from previous year and applying percentage increases
+            Map<String, IndividualYearlySummary> individualSummaries = new HashMap<>();
 
-            // Add base values for entries that start this year (for asset types)
+            // Step 1: Carry forward individuals from previous year with percentage increases applied to assets
+            if (previousSummary != null && previousSummary.individualSummaries() != null) {
+                for (Map.Entry<String, IndividualYearlySummary> entry : previousSummary.individualSummaries().entrySet()) {
+                    String name = entry.getKey();
+                    IndividualYearlySummary prevIndividual = entry.getValue();
+                    Person person = prevIndividual.person();
+
+                    // Apply percentage increases to assets from previous year
+                    double prevQualified = applyPercentageIncrease(prevIndividual.qualifiedAssets(),
+                            percentageRates.getOrDefault(ItemType.QUALIFIED, 0.0));
+                    double prevNonQualified = applyPercentageIncrease(prevIndividual.nonQualifiedAssets(),
+                            percentageRates.getOrDefault(ItemType.NON_QUALIFIED, 0.0));
+                    double prevRoth = applyPercentageIncrease(prevIndividual.rothAssets(),
+                            percentageRates.getOrDefault(ItemType.ROTH, 0.0));
+
+                    // Create new individual with carried-forward assets (income and SS will be set below)
+                    IndividualYearlySummary individual = new IndividualYearlySummary(
+                            person, year,
+                            0.0, // income will be set below
+                            prevQualified,
+                            prevNonQualified,
+                            prevRoth,
+                            0.0  // social security will be set below
+                    );
+                    individualSummaries.put(name, individual);
+                }
+            }
+
+            // Step 2: Add base values for entries that start this year (for asset types)
             for (FinancialEntry entry : entries) {
                 if (entry.startYear() == year) {
                     double baseValue = entry.value();
@@ -262,15 +289,19 @@ public class FinancialDataProcessor {
                     switch (entry.item()) {
                         case QUALIFIED -> {
                             qualifiedAssets += baseValue;
-                            qualifiedByName.merge(name, baseValue, Double::sum);
+                            // Add to individual if exists, or create new one
+                            IndividualYearlySummary ind = getOrCreateIndividual(individualSummaries, name, year, personsByName);
+                            ind.setQualifiedAssets(ind.qualifiedAssets() + baseValue);
                         }
                         case NON_QUALIFIED -> {
                             nonQualifiedAssets += baseValue;
-                            nonQualifiedByName.merge(name, baseValue, Double::sum);
+                            IndividualYearlySummary ind = getOrCreateIndividual(individualSummaries, name, year, personsByName);
+                            ind.setNonQualifiedAssets(ind.nonQualifiedAssets() + baseValue);
                         }
                         case ROTH -> {
                             rothAssets += baseValue;
-                            rothByName.merge(name, baseValue, Double::sum);
+                            IndividualYearlySummary ind = getOrCreateIndividual(individualSummaries, name, year, personsByName);
+                            ind.setRothAssets(ind.rothAssets() + baseValue);
                         }
                         case CASH -> cash += baseValue;
                         case REAL_ESTATE -> realEstate += baseValue;
@@ -280,33 +311,45 @@ public class FinancialDataProcessor {
                 }
             }
 
-            // Build individual summaries (simplified - tracks new entries this year)
-            Map<String, IndividualYearlySummary> individualSummaries = new HashMap<>();
-
-            // Collect all unique names from all maps
-            java.util.Set<String> allNames = new java.util.HashSet<>();
+            // Step 3: Collect all unique names (from previous year + current year entries)
+            java.util.Set<String> allNames = new java.util.HashSet<>(individualSummaries.keySet());
             allNames.addAll(incomeByName.keySet());
-            allNames.addAll(qualifiedByName.keySet());
-            allNames.addAll(nonQualifiedByName.keySet());
-            allNames.addAll(rothByName.keySet());
             allNames.addAll(socialSecurityByName.keySet());
             allNames.addAll(rothContributionsByName.keySet());
             allNames.addAll(qualifiedContributionsByName.keySet());
 
+            // Step 4: Apply income, social security, and contributions to individuals
             for (String name : allNames) {
-                Person person = personsByName != null ? personsByName.get(name) : null;
-                IndividualYearlySummary individual = new IndividualYearlySummary(
-                        person, year,
-                        incomeByName.getOrDefault(name, 0.0),
-                        qualifiedByName.getOrDefault(name, 0.0),
-                        nonQualifiedByName.getOrDefault(name, 0.0),
-                        rothByName.getOrDefault(name, 0.0),
-                        socialSecurityByName.getOrDefault(name, 0.0)
-                );
-                // Set contributions from contribution entries
-                individual.setRothContributions(rothContributionsByName.getOrDefault(name, 0.0));
-                individual.setQualifiedContributions(qualifiedContributionsByName.getOrDefault(name, 0.0));
-                individualSummaries.put(name, individual);
+                IndividualYearlySummary individual = getOrCreateIndividual(individualSummaries, name, year, personsByName);
+
+                // Apply income and social security (need to recreate with correct values since they're final)
+                double income = incomeByName.getOrDefault(name, 0.0);
+                double socialSecurity = socialSecurityByName.getOrDefault(name, 0.0);
+
+                if (income > 0 || socialSecurity > 0) {
+                    // Recreate individual with income and social security
+                    IndividualYearlySummary updatedIndividual = new IndividualYearlySummary(
+                            individual.person(), year,
+                            income,
+                            individual.qualifiedAssets(),
+                            individual.nonQualifiedAssets(),
+                            individual.rothAssets(),
+                            socialSecurity
+                    );
+                    individualSummaries.put(name, updatedIndividual);
+                    individual = updatedIndividual;
+                }
+
+                // Apply contributions
+                double rothContrib = rothContributionsByName.getOrDefault(name, 0.0);
+                double qualifiedContrib = qualifiedContributionsByName.getOrDefault(name, 0.0);
+
+                individual.setRothContributions(rothContrib);
+                individual.setQualifiedContributions(qualifiedContrib);
+
+                // Add contributions to asset balances
+                individual.setRothAssets(individual.rothAssets() + rothContrib);
+                individual.setQualifiedAssets(individual.qualifiedAssets() + qualifiedContrib);
             }
 
             summaries[i] = new YearlySummary(year, totalIncome, totalExpenses,
@@ -327,6 +370,23 @@ public class FinancialDataProcessor {
 
     private double applyPercentageIncrease(double value, double percentageRate) {
         return value * (1 + percentageRate / 100);
+    }
+
+    /**
+     * Gets an existing IndividualYearlySummary from the map, or creates a new one if it doesn't exist.
+     *
+     * @param individualSummaries the map of individual summaries
+     * @param name the name of the individual
+     * @param year the year for the summary
+     * @param personsByName map of name to Person
+     * @return the existing or newly created IndividualYearlySummary
+     */
+    private IndividualYearlySummary getOrCreateIndividual(Map<String, IndividualYearlySummary> individualSummaries,
+                                                          String name, int year, Map<String, Person> personsByName) {
+        return individualSummaries.computeIfAbsent(name, n -> {
+            Person person = personsByName != null ? personsByName.get(n) : null;
+            return new IndividualYearlySummary(person, year, 0.0, 0.0, 0.0, 0.0, 0.0);
+        });
     }
 
     /**
