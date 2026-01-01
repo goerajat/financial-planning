@@ -595,6 +595,11 @@ public class FinancialDataProcessor {
 
             // Life Insurance Benefits section
             writeTotalRow(writer, "Total Life Insurance Benefits", summaries, YearlySummary::lifeInsuranceBenefits);
+
+            // Cash Flow section
+            writeTotalRow(writer, "Total Cash Inflows", summaries, YearlySummary::totalCashInflows);
+            writeTotalRow(writer, "Total Cash Outflows", summaries, YearlySummary::totalCashOutflows);
+            writeTotalRow(writer, "Total Deficit", summaries, YearlySummary::deficit);
         }
     }
 
