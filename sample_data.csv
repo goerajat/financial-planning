@@ -11,3 +11,13 @@ John,social_security,SSA Benefits,28000,2031,2050
 Jane,income,Salary,55000,2024,2032
 Jane,qualified,401K,80000,2024,2050
 Jane,social_security,SSA Benefits,24000,2033,2050
+John,cash,Emergency Fund,30000,2024,2050
+John,real_estate,Primary Residence,450000,2024,2050
+John,life_insurance_benefit,Term Life Policy,500000,2024,2050
+John,life_insurance_contribution,Life Insurance Premium,6000,2024,2050
+John,roth_contribution,Roth IRA Contribution,7000,2024,2030
+Jane,cash,Savings,15000,2024,2050
+Jane,real_estate,Vacation Home,250000,2024,2050
+Jane,roth_contribution,Roth IRA Contribution,7000,2024,2032
+,mortgage,40000,500000,2024,2053
+,mortgage_repayment,Extra Principal,10000,2025,2030

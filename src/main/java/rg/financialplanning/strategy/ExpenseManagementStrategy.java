@@ -106,11 +106,12 @@ public class ExpenseManagementStrategy implements TaxOptimizationStrategy {
         // Get total expenses
         double totalExpenses = currentYearlySummary.totalExpenses();
 
-        // Get mortgage payment
+        // Get mortgage payment and repayment
         double mortgagePayment = currentYearlySummary.mortgagePayment();
+        double mortgageRepayment = currentYearlySummary.mortgageRepayment();
 
-        // Calculate surplus (including mortgage payment as an outflow)
-        double surplus = netIncomeAfterTaxes - totalExpenses - mortgagePayment - currentYearlySummary.rothContributions();
+        // Calculate surplus (including mortgage payment and repayment as outflows)
+        double surplus = netIncomeAfterTaxes - totalExpenses - mortgagePayment - mortgageRepayment - currentYearlySummary.rothContributions();
 
         if (surplus < 0) {
             // Deficit - need to withdraw from assets in order of priority

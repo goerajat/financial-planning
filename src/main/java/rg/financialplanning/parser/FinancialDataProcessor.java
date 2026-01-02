@@ -353,13 +353,24 @@ public class FinancialDataProcessor {
                 individual.setQualifiedAssets(individual.qualifiedAssets() + qualifiedContrib);
             }
 
-            // Calculate mortgage payment and balance
+            // Calculate mortgage payment, repayment, and balance
             // Input: value = outstanding mortgage amount, description = fixed annual payment
             // Interest rate from percentages CSV, balance tracked year-over-year
             double mortgagePayment = 0;
             double mortgageBalance = 0;
+            double mortgageRepayment = 0;
             MortgageCalculator mortgageCalculator = new MortgageCalculator();
 
+            // First, calculate any mortgage repayments (extra principal payments) for this year
+            for (FinancialEntry entry : entries) {
+                if (entry.item() == ItemType.MORTGAGE_REPAYMENT && entry.isActiveInYear(year)) {
+                    double repaymentValue = entry.getValueForYear(year,
+                            percentageRates.getOrDefault(ItemType.MORTGAGE_REPAYMENT, 0.0));
+                    mortgageRepayment += repaymentValue;
+                }
+            }
+
+            // Then process the mortgage itself
             for (FinancialEntry entry : entries) {
                 if (entry.item() == ItemType.MORTGAGE && entry.isActiveInYear(year)) {
                     double interestRate = percentageRates.getOrDefault(ItemType.MORTGAGE, 0.0);
@@ -392,8 +403,8 @@ public class FinancialDataProcessor {
                     // Principal paid = payment - interest
                     double principalPortion = fixedAnnualPayment - interestPortion;
 
-                    // New balance = old balance - principal paid (don't go below 0)
-                    double endingBalance = Math.max(0, startingBalance - principalPortion);
+                    // New balance = old balance - principal paid - extra repayment (don't go below 0)
+                    double endingBalance = Math.max(0, startingBalance - principalPortion - mortgageRepayment);
 
                     mortgagePayment += fixedAnnualPayment;
                     mortgageBalance = endingBalance;
@@ -404,9 +415,10 @@ public class FinancialDataProcessor {
                     qualifiedAssets, nonQualifiedAssets, rothAssets, cash, realEstate,
                     lifeInsuranceBenefits, totalSocialSecurity, rothContributions, individualSummaries);
 
-            // Set mortgage payment and balance
+            // Set mortgage payment, repayment, and balance
             summaries[i].setMortgagePayment(mortgagePayment);
             summaries[i].setMortgageBalance(mortgageBalance);
+            summaries[i].setMortgageRepayment(mortgageRepayment);
 
             // Apply tax optimization strategy after creating the summary
             if (taxOptimizationStrategy != null) {
@@ -650,6 +662,7 @@ public class FinancialDataProcessor {
 
             // Mortgage section
             writeTotalRow(writer, "Total Mortgage Payment", summaries, YearlySummary::mortgagePayment);
+            writeTotalRow(writer, "Total Mortgage Repayment", summaries, YearlySummary::mortgageRepayment);
             writeTotalRow(writer, "Outstanding Mortgage Balance", summaries, YearlySummary::mortgageBalance);
 
             // Cash Flow section

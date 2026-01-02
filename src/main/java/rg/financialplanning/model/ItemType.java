@@ -16,7 +16,8 @@ public enum ItemType {
     ROTH_CONTRIBUTION,
     QUALIFIED_CONTRIBUTION,
     LIFE_INSURANCE_CONTRIBUTION,
-    MORTGAGE;
+    MORTGAGE,
+    MORTGAGE_REPAYMENT;
 
     public static ItemType fromString(String value) {
         if (value == null || value.isBlank()) {
@@ -36,6 +37,7 @@ public enum ItemType {
             case "QUALIFIED_CONTRIBUTION", "QUALIFIED CONTRIBUTION", "401K_CONTRIBUTION", "401K CONTRIBUTION" -> QUALIFIED_CONTRIBUTION;
             case "LIFE_INSURANCE_CONTRIBUTION", "LIFE INSURANCE CONTRIBUTION" -> LIFE_INSURANCE_CONTRIBUTION;
             case "MORTGAGE", "MORTGAGE_LOAN", "MORTGAGE LOAN" -> MORTGAGE;
+            case "MORTGAGE_REPAYMENT", "MORTGAGE REPAYMENT", "EXTRA_PRINCIPAL", "EXTRA PRINCIPAL" -> MORTGAGE_REPAYMENT;
             default -> throw new IllegalArgumentException("Unknown item type: " + value);
         };
     }
