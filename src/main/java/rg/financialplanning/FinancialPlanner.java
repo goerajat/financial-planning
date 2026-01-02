@@ -1,5 +1,7 @@
 package rg.financialplanning;
 
+import rg.financialplanning.export.FinancialPlanInputs;
+import rg.financialplanning.export.PdfExporter;
 import rg.financialplanning.model.FinancialEntry;
 import rg.financialplanning.model.Person;
 import rg.financialplanning.model.YearlySummary;
@@ -69,6 +71,18 @@ public class FinancialPlanner {
             processor.exportYearlySummariesToCsv(summaries, outputCsvPath);
             System.out.println("\n=== CSV Export ===");
             System.out.println("Yearly summaries exported to: " + outputCsvPath);
+
+            // Export yearly summaries to PDF
+            String outputPdfPath = "FinancialPlanner-Out.pdf";
+            PdfExporter pdfExporter = new PdfExporter();
+            FinancialPlanInputs planInputs = new FinancialPlanInputs(
+                    processor.getEntries(),
+                    personParser.getPersons(),
+                    percentageParser.getPercentagesByType()
+            );
+            pdfExporter.exportYearlySummariesToPdf(summaries, planInputs, outputPdfPath);
+            System.out.println("\n=== PDF Export ===");
+            System.out.println("Yearly summaries exported to: " + outputPdfPath);
 
         } catch (IOException e) {
             System.err.println("Error reading CSV file: " + e.getMessage());

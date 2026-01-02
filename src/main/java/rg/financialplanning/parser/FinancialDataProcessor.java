@@ -165,6 +165,24 @@ public class FinancialDataProcessor {
     }
 
     /**
+     * Sets the entries directly (for use by UI instead of loading from CSV).
+     *
+     * @param newEntries the list of financial entries to set
+     */
+    public void setEntries(List<FinancialEntry> newEntries) {
+        entries.clear();
+        earliestStartYear = Integer.MAX_VALUE;
+        latestEndYear = Integer.MIN_VALUE;
+
+        if (newEntries != null) {
+            for (FinancialEntry entry : newEntries) {
+                entries.add(entry);
+                updateYearBounds(entry);
+            }
+        }
+    }
+
+    /**
      * Generates yearly summaries as an array using the provided percentage rates.
      * Index 0 represents earliestStartYear, array length is (latestEndYear - earliestStartYear + 1).
      *
@@ -557,119 +575,141 @@ public class FinancialDataProcessor {
             // Write age row for each individual
             writeAgeRows(writer, summaries, allNames);
 
-            // Income section
+            // === CASH INFLOWS SECTION ===
+            writeSectionHeader(writer, "CASH INFLOWS", summaries.length);
+
+            // Income
             writeTotalRow(writer, "Total Income", summaries, YearlySummary::totalIncome);
             for (String name : allNames) {
                 writeIndividualRow(writer, name + " Income", summaries, name,
                         ind -> ind.income());
             }
 
-            // RMD Withdrawals section
+            // Withdrawals
             writeTotalRow(writer, "Total RMD Withdrawals", summaries, YearlySummary::rmdWithdrawals);
             for (String name : allNames) {
                 writeIndividualRow(writer, name + " RMD Withdrawals", summaries, name,
                         ind -> ind.rmdWithdrawals());
             }
 
-            // Qualified Withdrawals section
             writeTotalRow(writer, "Total Qualified Withdrawals", summaries, YearlySummary::qualifiedWithdrawals);
             for (String name : allNames) {
                 writeIndividualRow(writer, name + " Qualified Withdrawals", summaries, name,
                         ind -> ind.qualifiedWithdrawals());
             }
 
-            // Non-Qualified Withdrawals section
             writeTotalRow(writer, "Total Non-Qualified Withdrawals", summaries, YearlySummary::nonQualifiedWithdrawals);
             for (String name : allNames) {
                 writeIndividualRow(writer, name + " Non-Qualified Withdrawals", summaries, name,
                         ind -> ind.nonQualifiedWithdrawals());
             }
 
-            // Cash Withdrawals section
+            writeTotalRow(writer, "Total Roth Withdrawals", summaries, YearlySummary::rothWithdrawals);
+            for (String name : allNames) {
+                writeIndividualRow(writer, name + " Roth Withdrawals", summaries, name,
+                        ind -> ind.rothWithdrawals());
+            }
+
             writeTotalRow(writer, "Total Cash Withdrawals", summaries, YearlySummary::cashWithdrawals);
             for (String name : allNames) {
                 writeIndividualRow(writer, name + " Cash Withdrawals", summaries, name,
                         ind -> ind.cashWithdrawals());
             }
 
-            // Social Security Benefits section
+            // Social Security Benefits
             writeTotalRow(writer, "Total Social Security Benefits", summaries, YearlySummary::totalSocialSecurity);
             for (String name : allNames) {
                 writeIndividualRow(writer, name + " Social Security Benefits", summaries, name,
                         ind -> ind.socialSecurityBenefits());
             }
 
-            // Qualified Contributions section
-            writeTotalRow(writer, "Total Qualified Contributions", summaries, YearlySummary::qualifiedContributions);
-            for (String name : allNames) {
-                writeIndividualRow(writer, name + " Qualified Contributions", summaries, name,
-                        ind -> ind.qualifiedContributions());
-            }
+            writeTotalRow(writer, "TOTAL CASH INFLOWS", summaries, YearlySummary::totalCashInflows);
 
-            // Non-Qualified Contributions section
-            writeTotalRow(writer, "Total Non-Qualified Contributions", summaries, YearlySummary::nonQualifiedContributions);
-            for (String name : allNames) {
-                writeIndividualRow(writer, name + " Non-Qualified Contributions", summaries, name,
-                        ind -> ind.nonQualifiedContributions());
-            }
+            // === CASH OUTFLOWS SECTION ===
+            writeSectionHeader(writer, "CASH OUTFLOWS", summaries.length);
 
-            // Roth Contributions section
+            // Expenses
+            writeTotalRow(writer, "Total Expenses", summaries, YearlySummary::totalExpenses);
+
+            // Contributions
             writeTotalRow(writer, "Total Roth Contributions", summaries, YearlySummary::rothContributions);
             for (String name : allNames) {
                 writeIndividualRow(writer, name + " Roth Contributions", summaries, name,
                         ind -> ind.rothContributions());
             }
 
-            // Tax section
-            writeTotalRow(writer, "Total Federal Income Tax", summaries, YearlySummary::federalIncomeTax);
-            writeTotalRow(writer, "Total State Income Tax", summaries, YearlySummary::stateIncomeTax);
-            writeTotalRow(writer, "Total Capital Gains Tax", summaries, YearlySummary::capitalGainsTax);
-            writeTotalRow(writer, "Total Social Security Tax", summaries, YearlySummary::socialSecurityTax);
-            writeTotalRow(writer, "Total Medicare Tax", summaries, YearlySummary::medicareTax);
+            writeTotalRow(writer, "Total Qualified Contributions", summaries, YearlySummary::qualifiedContributions);
+            for (String name : allNames) {
+                writeIndividualRow(writer, name + " Qualified Contributions", summaries, name,
+                        ind -> ind.qualifiedContributions());
+            }
 
-            // Expenses section
-            writeTotalRow(writer, "Total Expenses", summaries, YearlySummary::totalExpenses);
+            writeTotalRow(writer, "Total Non-Qualified Contributions", summaries, YearlySummary::nonQualifiedContributions);
+            for (String name : allNames) {
+                writeIndividualRow(writer, name + " Non-Qualified Contributions", summaries, name,
+                        ind -> ind.nonQualifiedContributions());
+            }
 
-            // Qualified Assets section
+            // Taxes
+            writeTotalRow(writer, "Federal Income Tax", summaries, YearlySummary::federalIncomeTax);
+            writeTotalRow(writer, "State Income Tax", summaries, YearlySummary::stateIncomeTax);
+            writeTotalRow(writer, "Capital Gains Tax", summaries, YearlySummary::capitalGainsTax);
+            writeTotalRow(writer, "Social Security Tax", summaries, YearlySummary::socialSecurityTax);
+            writeTotalRow(writer, "Medicare Tax", summaries, YearlySummary::medicareTax);
+
+            // Mortgage Payments
+            writeTotalRow(writer, "Mortgage Payment", summaries, YearlySummary::mortgagePayment);
+            writeTotalRow(writer, "Mortgage Repayment (Extra Principal)", summaries, YearlySummary::mortgageRepayment);
+
+            writeTotalRow(writer, "TOTAL CASH OUTFLOWS", summaries, YearlySummary::totalCashOutflows);
+
+            // Deficit
+            writeTotalRow(writer, "Deficit", summaries, YearlySummary::deficit);
+
+            // === ASSETS SECTION ===
+            writeSectionHeader(writer, "ASSETS", summaries.length);
+
             writeTotalRow(writer, "Total Qualified Assets", summaries, YearlySummary::qualifiedAssets);
             for (String name : allNames) {
                 writeIndividualRow(writer, name + " Qualified Assets", summaries, name,
                         ind -> ind.qualifiedAssets());
             }
 
-            // Non-Qualified Assets section
             writeTotalRow(writer, "Total Non-Qualified Assets", summaries, YearlySummary::nonQualifiedAssets);
             for (String name : allNames) {
                 writeIndividualRow(writer, name + " Non-Qualified Assets", summaries, name,
                         ind -> ind.nonQualifiedAssets());
             }
 
-            // Roth Assets section
             writeTotalRow(writer, "Total Roth Assets", summaries, YearlySummary::rothAssets);
             for (String name : allNames) {
                 writeIndividualRow(writer, name + " Roth Assets", summaries, name,
                         ind -> ind.rothAssets());
             }
 
-            // Cash section
             writeTotalRow(writer, "Total Cash", summaries, YearlySummary::cash);
-
-            // Real Estate section
             writeTotalRow(writer, "Total Real Estate", summaries, YearlySummary::realEstate);
-
-            // Life Insurance Benefits section
             writeTotalRow(writer, "Total Life Insurance Benefits", summaries, YearlySummary::lifeInsuranceBenefits);
 
-            // Mortgage section
-            writeTotalRow(writer, "Total Mortgage Payment", summaries, YearlySummary::mortgagePayment);
-            writeTotalRow(writer, "Total Mortgage Repayment", summaries, YearlySummary::mortgageRepayment);
-            writeTotalRow(writer, "Outstanding Mortgage Balance", summaries, YearlySummary::mortgageBalance);
+            writeTotalRow(writer, "TOTAL ASSETS", summaries, YearlySummary::totalAssets);
 
-            // Cash Flow section
-            writeTotalRow(writer, "Total Cash Inflows", summaries, YearlySummary::totalCashInflows);
-            writeTotalRow(writer, "Total Cash Outflows", summaries, YearlySummary::totalCashOutflows);
-            writeTotalRow(writer, "Total Deficit", summaries, YearlySummary::deficit);
+            // === LIABILITIES SECTION ===
+            writeSectionHeader(writer, "LIABILITIES", summaries.length);
+
+            writeTotalRow(writer, "Outstanding Mortgage Balance", summaries, YearlySummary::mortgageBalance);
         }
+    }
+
+    /**
+     * Writes a section header row.
+     */
+    private void writeSectionHeader(BufferedWriter writer, String sectionName, int yearCount) throws IOException {
+        StringBuilder sb = new StringBuilder("--- " + sectionName + " ---");
+        for (int i = 0; i < yearCount; i++) {
+            sb.append(",");
+        }
+        writer.write(sb.toString());
+        writer.newLine();
     }
 
     /**

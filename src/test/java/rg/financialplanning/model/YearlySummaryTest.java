@@ -282,10 +282,18 @@ public class YearlySummaryTest {
 
     @Test
     public void testNetWorth() {
-        // totalAssets() + netIncome()
+        // totalAssets() - mortgageBalance
         double expectedAssets = 900000 + 350000 + 180000 + 50000 + 500000 + 200000;
-        double expectedNetIncome = 180000 - 120000;
-        assertEquals(expectedAssets + expectedNetIncome, summary.netWorth(), 0.001);
+        double mortgageBalance = 0; // default is 0
+        assertEquals(expectedAssets - mortgageBalance, summary.netWorth(), 0.001);
+    }
+
+    @Test
+    public void testNetWorthWithMortgage() {
+        // totalAssets() - mortgageBalance
+        summary.setMortgageBalance(500000);
+        double expectedAssets = 900000 + 350000 + 180000 + 50000 + 500000 + 200000;
+        assertEquals(expectedAssets - 500000, summary.netWorth(), 0.001);
     }
 
     @Test

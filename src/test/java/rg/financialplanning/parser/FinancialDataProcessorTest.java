@@ -429,11 +429,11 @@ public class FinancialDataProcessorTest {
         assertTrue(csvContent.contains("Jane Income"));
 
         // Check tax rows
-        assertTrue(csvContent.contains("Total Federal Income Tax"));
-        assertTrue(csvContent.contains("Total State Income Tax"));
-        assertTrue(csvContent.contains("Total Capital Gains Tax"));
-        assertTrue(csvContent.contains("Total Social Security Tax"));
-        assertTrue(csvContent.contains("Total Medicare Tax"));
+        assertTrue(csvContent.contains("Federal Income Tax"));
+        assertTrue(csvContent.contains("State Income Tax"));
+        assertTrue(csvContent.contains("Capital Gains Tax"));
+        assertTrue(csvContent.contains("Social Security Tax"));
+        assertTrue(csvContent.contains("Medicare Tax"));
 
         // Check expenses row
         assertTrue(csvContent.contains("Total Expenses"));

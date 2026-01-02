@@ -296,7 +296,7 @@ public class YearlySummary {
     }
 
     public double netWorth() {
-        return totalAssets() + netIncome();
+        return totalAssets() - mortgageBalance;
     }
 
     public IndividualYearlySummary getIndividualSummary(String name) {
