@@ -2,7 +2,6 @@ package rg.financialplanning.strategy;
 
 import org.junit.Test;
 import org.junit.Before;
-import rg.financialplanning.model.FilingStatus;
 import rg.financialplanning.model.IndividualYearlySummary;
 import rg.financialplanning.model.Person;
 import rg.financialplanning.model.YearlySummary;
@@ -15,10 +14,12 @@ import static org.junit.Assert.*;
 public class ExpenseManagementStrategyTest {
 
     private ExpenseManagementStrategy strategy;
+    private TaxCalculationStrategy taxCalculationStrategy;
 
     @Before
     public void setUp() {
         strategy = new ExpenseManagementStrategy();
+        taxCalculationStrategy = new TaxCalculationStrategy();
     }
 
     private YearlySummary createYearlySummary(int year, double income, double expenses,
@@ -36,18 +37,21 @@ public class ExpenseManagementStrategyTest {
         return new YearlySummary(year, income, expenses, totalQualified, totalNonQualified, totalRoth, 50000, 0, 0, totalSS, 0, individuals);
     }
 
+    /**
+     * Helper method to apply tax calculation before expense management.
+     * This mirrors the flow in CompositeTaxOptimizationStrategy.
+     */
+    private void applyTaxThenExpense(YearlySummary summary) {
+        taxCalculationStrategy.optimize(null, summary);
+        strategy.optimize(null, summary);
+    }
+
     // ===== Constructor tests =====
 
     @Test
     public void testConstructor_default() {
         ExpenseManagementStrategy defaultStrategy = new ExpenseManagementStrategy();
-        assertEquals(FilingStatus.MARRIED_FILING_JOINTLY, defaultStrategy.getFilingStatus());
-    }
-
-    @Test
-    public void testConstructor_withFilingStatus() {
-        ExpenseManagementStrategy singleStrategy = new ExpenseManagementStrategy(FilingStatus.SINGLE);
-        assertEquals(FilingStatus.SINGLE, singleStrategy.getFilingStatus());
+        assertNotNull(defaultStrategy);
     }
 
     // ===== optimize tests =====
@@ -62,7 +66,7 @@ public class ExpenseManagementStrategyTest {
     public void testOptimize_noIndividuals() {
         Map<String, IndividualYearlySummary> individuals = new HashMap<>();
         YearlySummary current = createYearlySummary(2025, 100000, 50000, individuals);
-        strategy.optimize(null, current);
+        applyTaxThenExpense(current);
         // No exception
     }
 
@@ -78,7 +82,7 @@ public class ExpenseManagementStrategyTest {
 
         // High income, low expenses = surplus
         YearlySummary current = createYearlySummary(2025, 200000, 50000, individuals);
-        strategy.optimize(null, current);
+        applyTaxThenExpense(current);
 
         // Non-qualified assets should increase due to surplus
         assertTrue(individual.nonQualifiedAssets() > originalNonQualified);
@@ -99,7 +103,7 @@ public class ExpenseManagementStrategyTest {
 
         // High income, low expenses
         YearlySummary current = createYearlySummary(2025, 200000, 50000, individuals);
-        strategy.optimize(null, current);
+        applyTaxThenExpense(current);
 
         // Both should receive equal surplus
         assertEquals(johnSummary.nonQualifiedContributions(), janeSummary.nonQualifiedContributions(), 0.01);
@@ -118,7 +122,7 @@ public class ExpenseManagementStrategyTest {
 
         // Low income, high expenses = deficit
         YearlySummary current = createYearlySummary(2025, 50000, 150000, individuals);
-        strategy.optimize(null, current);
+        applyTaxThenExpense(current);
 
         // Non-qualified should decrease
         assertTrue(individual.nonQualifiedAssets() < originalNonQualified);
@@ -138,7 +142,7 @@ public class ExpenseManagementStrategyTest {
 
         // Very high expenses, low non-qualified
         YearlySummary current = createYearlySummary(2025, 50000, 200000, individuals);
-        strategy.optimize(null, current);
+        applyTaxThenExpense(current);
 
         // Should withdraw from qualified after non-qualified is exhausted
         assertTrue(individual.qualifiedAssets() < originalQualified);
@@ -157,7 +161,7 @@ public class ExpenseManagementStrategyTest {
 
         // High expenses, but person is too young for qualified withdrawal
         YearlySummary current = createYearlySummary(2025, 50000, 200000, individuals);
-        strategy.optimize(null, current);
+        applyTaxThenExpense(current);
 
         // Qualified assets should remain unchanged (too young to withdraw)
         assertEquals(originalQualified, individual.qualifiedAssets(), 0.01);
@@ -175,7 +179,7 @@ public class ExpenseManagementStrategyTest {
 
         // Very high expenses
         YearlySummary current = createYearlySummary(2025, 50000, 250000, individuals);
-        strategy.optimize(null, current);
+        applyTaxThenExpense(current);
 
         // Should withdraw from Roth after qualified is exhausted
         assertTrue(individual.rothAssets() < originalRoth);
@@ -194,7 +198,7 @@ public class ExpenseManagementStrategyTest {
         YearlySummary current = new YearlySummary(2025, 50000, 300000, 10000, 10000, 10000, 100000, 0, 0, 0, 0, individuals);
 
         double originalCash = current.cash();
-        strategy.optimize(null, current);
+        applyTaxThenExpense(current);
 
         // Should withdraw from cash
         assertTrue(current.cash() < originalCash);
@@ -211,7 +215,7 @@ public class ExpenseManagementStrategyTest {
 
         // Very high expenses, insufficient assets
         YearlySummary current = new YearlySummary(2025, 0, 500000, 10000, 10000, 10000, 10000, 0, 0, 0, 0, individuals);
-        strategy.optimize(null, current);
+        applyTaxThenExpense(current);
 
         // Should track remaining deficit
         assertTrue(current.deficit() > 0);
@@ -225,82 +229,43 @@ public class ExpenseManagementStrategyTest {
         Map<String, IndividualYearlySummary> individuals = new HashMap<>();
         individuals.put("John", individual);
 
-        double originalNonQualified = individual.nonQualifiedAssets();
-
         // Income exactly covers expenses after taxes (approximately)
         YearlySummary current = createYearlySummary(2025, 100000, 100000, individuals);
-        strategy.optimize(null, current);
+        applyTaxThenExpense(current);
 
         // This test just verifies no exception - actual balance depends on tax calculations
     }
 
-    // ===== calculateSurplus tests =====
+    // ===== Cash flow balance tests =====
 
     @Test
-    public void testCalculateSurplus_nullSummary() {
-        double surplus = strategy.calculateSurplus(null);
-        assertEquals(0.0, surplus, 0.001);
-    }
-
-    @Test
-    public void testCalculateSurplus_positiveSurplus() {
-        Person person = new Person("John", 1960);
-        IndividualYearlySummary individual = new IndividualYearlySummary(person, 2025, 200000, 0, 100000, 0, 0);
-
-        Map<String, IndividualYearlySummary> individuals = new HashMap<>();
-        individuals.put("John", individual);
-
-        YearlySummary summary = createYearlySummary(2025, 200000, 50000, individuals);
-        double surplus = strategy.calculateSurplus(summary);
-
-        // Should have positive surplus (high income, low expenses)
-        assertTrue(surplus > 0);
-    }
-
-    @Test
-    public void testCalculateSurplus_negativeSurplus() {
-        Person person = new Person("John", 1960);
-        IndividualYearlySummary individual = new IndividualYearlySummary(person, 2025, 50000, 0, 100000, 0, 0);
-
-        Map<String, IndividualYearlySummary> individuals = new HashMap<>();
-        individuals.put("John", individual);
-
-        YearlySummary summary = createYearlySummary(2025, 50000, 200000, individuals);
-        double surplus = strategy.calculateSurplus(summary);
-
-        // Should have negative surplus (low income, high expenses)
-        assertTrue(surplus < 0);
-    }
-
-    // ===== calculateTaxBreakdown tests =====
-
-    @Test
-    public void testCalculateTaxBreakdown_nullSummary() {
-        double[] breakdown = strategy.calculateTaxBreakdown(null);
-        assertEquals(5, breakdown.length);
-        for (double value : breakdown) {
-            assertEquals(0.0, value, 0.001);
-        }
-    }
-
-    @Test
-    public void testCalculateTaxBreakdown_validSummary() {
+    public void testOptimize_usesCashInflowMinusOutflow() {
         Person person = new Person("John", 1960);
         IndividualYearlySummary individual = new IndividualYearlySummary(person, 2025, 100000, 0, 50000, 0, 0);
 
         Map<String, IndividualYearlySummary> individuals = new HashMap<>();
         individuals.put("John", individual);
 
-        YearlySummary summary = createYearlySummary(2025, 100000, 50000, individuals);
-        double[] breakdown = strategy.calculateTaxBreakdown(summary);
+        YearlySummary current = createYearlySummary(2025, 100000, 50000, individuals);
 
-        assertEquals(5, breakdown.length);
-        // [federalTax, stateTax, socialSecurityTax, medicareTax, totalTaxes]
-        assertTrue(breakdown[0] > 0); // Federal tax
-        assertTrue(breakdown[1] > 0); // State tax
-        assertTrue(breakdown[2] > 0); // Social Security tax
-        assertTrue(breakdown[3] > 0); // Medicare tax
-        assertEquals(breakdown[0] + breakdown[1] + breakdown[2] + breakdown[3], breakdown[4], 0.01);
+        // Apply tax calculation first (as CompositeTaxOptimizationStrategy does)
+        taxCalculationStrategy.optimize(null, current);
+
+        // Before expense management, check cash flow
+        double initialInflows = current.totalCashInflows();
+        double initialOutflows = current.totalCashOutflows();
+
+        // Apply expense management
+        strategy.optimize(null, current);
+
+        // After expense management, cash flow should be closer to balanced
+        // (surplus distributed to non-qualified contributions increases outflows)
+        double finalOutflows = current.totalCashOutflows();
+
+        // If there was a surplus, outflows should have increased due to non-qualified contributions
+        if (initialInflows > initialOutflows) {
+            assertTrue(finalOutflows >= initialOutflows);
+        }
     }
 
     // ===== Strategy metadata tests =====
@@ -314,8 +279,9 @@ public class ExpenseManagementStrategyTest {
     public void testGetDescription() {
         String description = strategy.getDescription();
         assertNotNull(description);
-        assertTrue(description.contains("expense"));
+        assertTrue(description.contains("expense") || description.contains("Expense"));
         assertTrue(description.contains("surplus") || description.contains("deficit"));
+        assertTrue(description.contains("cash inflows") || description.contains("inflows"));
     }
 
     // ===== Constants tests =====
