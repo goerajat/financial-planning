@@ -135,6 +135,17 @@
                 <configuration>
                     <mainClass>rg.financialplanning.web.FinancialPlannerWebApp</mainClass>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>repackage</id>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>web</classifier>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Frontend Maven Plugin for React build -->
