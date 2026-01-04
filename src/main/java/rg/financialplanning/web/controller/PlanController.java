@@ -9,6 +9,8 @@ import rg.financialplanning.web.dto.FinancialPlanDTO;
 import rg.financialplanning.web.dto.RateDTO;
 import rg.financialplanning.web.dto.SensitivityAnalysisRequestDTO;
 import rg.financialplanning.web.dto.SensitivityAnalysisResponseDTO;
+import rg.financialplanning.web.dto.RothComparisonRequestDTO;
+import rg.financialplanning.web.dto.RothComparisonResponseDTO;
 import rg.financialplanning.web.service.FinancialPlanService;
 
 import java.io.IOException;
@@ -82,6 +84,19 @@ public class PlanController {
             @RequestBody SensitivityAnalysisRequestDTO request) {
         try {
             SensitivityAnalysisResponseDTO response = planService.runSensitivityAnalysis(request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/roth-comparison")
+    public ResponseEntity<RothComparisonResponseDTO> runRothComparison(
+            @RequestBody RothComparisonRequestDTO request) {
+        try {
+            RothComparisonResponseDTO response = planService.runRothConversionComparison(request);
             return ResponseEntity.ok(response);
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().build();

@@ -1,0 +1,308 @@
+.roth-comparison-tab {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.roth-comparison-tab .tab-description {
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.comparison-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+  margin-bottom: 25px;
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.comparison-inputs .input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.comparison-inputs .input-group label {
+  font-weight: 500;
+  color: #555;
+  font-size: 13px;
+}
+
+.comparison-inputs .input-group input,
+.comparison-inputs .input-group select {
+  width: 120px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.comparison-inputs .input-group.filing-status-group select {
+  width: 220px;
+}
+
+.comparison-inputs .input-group input:focus,
+.comparison-inputs .input-group select:focus {
+  outline: none;
+  border-color: #4a90d9;
+}
+
+.run-comparison-btn {
+  padding: 10px 24px;
+  font-weight: 500;
+  background-color: #5c6bc0;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.run-comparison-btn:hover:not(:disabled) {
+  background-color: #3f51b5;
+}
+
+.run-comparison-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  background: #ffebee;
+  color: #c62828;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.comparison-results h3 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.table-container {
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-width: 800px;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  vertical-align: top;
+}
+
+.comparison-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.comparison-table .scenario-header,
+.comparison-table .scenario-cell {
+  text-align: left;
+  background: #fafafa;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 180px;
+}
+
+.comparison-table .year-header {
+  text-align: center;
+  min-width: 140px;
+}
+
+.comparison-table .year-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.comparison-table .year-offset {
+  font-size: 11px;
+  color: #888;
+  font-weight: normal;
+}
+
+.scenario-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.bracket-threshold {
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.comparison-table tbody tr:hover {
+  background: #f8f8f8;
+}
+
+.comparison-table tbody tr:hover .scenario-cell {
+  background: #f0f0f0;
+}
+
+.comparison-table .baseline-row {
+  background: #f5f5f5;
+}
+
+.comparison-table .baseline-row .scenario-cell {
+  background: #eeeeee;
+}
+
+.data-cell {
+  text-align: right;
+}
+
+.roth-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+}
+
+.roth-cell .net-worth {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.roth-cell .delta {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.roth-cell .delta.positive {
+  color: #2e7d32;
+}
+
+.roth-cell .delta.negative {
+  color: #c62828;
+}
+
+.roth-cell .delta.neutral {
+  color: #666;
+}
+
+.roth-cell .taxes,
+.roth-cell .roth-balance {
+  font-size: 11px;
+  color: #666;
+}
+
+.shortfall-cell {
+  text-align: center !important;
+}
+
+.shortfall-cell .shortfall-label {
+  font-weight: 600;
+  color: #c62828;
+}
+
+.shortfall-cell .shortfall-year {
+  font-size: 11px;
+  color: #c62828;
+}
+
+.cell-positive {
+  background: #e8f5e9;
+}
+
+.cell-negative {
+  background: #fff3e0;
+}
+
+.cell-shortfall {
+  background: #ffebee;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 25px;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #555;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+.legend-color.baseline {
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+}
+
+.legend-color.positive {
+  background: #e8f5e9;
+  border: 1px solid #2e7d32;
+}
+
+.legend-color.negative {
+  background: #fff3e0;
+  border: 1px solid #e65100;
+}
+
+.legend-color.shortfall {
+  background: #ffebee;
+  border: 1px solid #c62828;
+}
+
+.comparison-notes {
+  background: #f5f5f5;
+  padding: 15px 20px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.comparison-notes h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 14px;
+}
+
+.comparison-notes ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.comparison-notes li {
+  margin-bottom: 6px;
+  color: #555;
+}
+
+.comparison-notes li strong {
+  color: #333;
+}
+
+.empty-message {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+  font-size: 14px;
+}

@@ -85,3 +85,41 @@ export interface SensitivityAnalysisResponse {
   milestoneYears: number[];
   rows: SensitivityRow[];
 }
+
+// Roth Conversion Comparison Types
+export type FilingStatus = 'SINGLE' | 'MARRIED_FILING_JOINTLY' | 'MARRIED_FILING_SEPARATELY' | 'HEAD_OF_HOUSEHOLD';
+
+export const FILING_STATUSES: { value: FilingStatus; label: string }[] = [
+  { value: 'MARRIED_FILING_JOINTLY', label: 'Married Filing Jointly' },
+  { value: 'SINGLE', label: 'Single' },
+  { value: 'MARRIED_FILING_SEPARATELY', label: 'Married Filing Separately' },
+  { value: 'HEAD_OF_HOUSEHOLD', label: 'Head of Household' },
+];
+
+export interface RothComparisonRequest {
+  planData: FinancialPlan;
+  yearIncrement?: number;
+  filingStatus?: FilingStatus;
+}
+
+export interface RothComparisonCell {
+  year: number;
+  netWorth: number;
+  netWorthDelta: number;
+  cumulativeTaxes: number;
+  rothBalance: number;
+  hasShortfall: boolean;
+  shortfallYear: number | null;
+}
+
+export interface RothComparisonRow {
+  scenarioName: string;
+  bracketThreshold: number | null;
+  cells: RothComparisonCell[];
+}
+
+export interface RothComparisonResponse {
+  firstDataYear: number;
+  milestoneYears: number[];
+  rows: RothComparisonRow[];
+}

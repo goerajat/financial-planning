@@ -19,6 +19,16 @@ import rg.financialplanning.web.dto.SensitivityAnalysisRequestDTO;
 import rg.financialplanning.web.dto.SensitivityAnalysisResponseDTO;
 import rg.financialplanning.web.dto.SensitivityRowDTO;
 import rg.financialplanning.web.dto.SensitivityCellDTO;
+import rg.financialplanning.web.dto.RothComparisonRequestDTO;
+import rg.financialplanning.web.dto.RothComparisonResponseDTO;
+import rg.financialplanning.web.dto.RothComparisonRowDTO;
+import rg.financialplanning.web.dto.RothComparisonCellDTO;
+import rg.financialplanning.model.FilingStatus;
+import rg.financialplanning.strategy.CompositeTaxOptimizationStrategy;
+import rg.financialplanning.strategy.NoOpRothConversionStrategy;
+import rg.financialplanning.strategy.RMDOptimizationStrategy;
+import rg.financialplanning.strategy.ExpenseManagementStrategy;
+import rg.financialplanning.strategy.RothConversionOptimizationStrategy;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -299,5 +309,160 @@ public class FinancialPlanService {
         response.setMilestoneYears(milestoneYears);
         response.setRows(rows);
         return response;
+    }
+
+    public RothComparisonResponseDTO runRothConversionComparison(RothComparisonRequestDTO request) {
+        FinancialPlanDTO planData = request.getPlanData();
+        int yearIncrement = request.getYearIncrement();
+
+        // Parse filing status
+        FilingStatus filingStatus;
+        try {
+            filingStatus = FilingStatus.valueOf(request.getFilingStatus());
+        } catch (IllegalArgumentException e) {
+            filingStatus = FilingStatus.MARRIED_FILING_JOINTLY;
+        }
+
+        // Convert DTOs to domain models
+        List<FinancialEntry> entries = planData.getEntries().stream()
+                .map(FinancialEntryDTO::toEntry)
+                .collect(Collectors.toList());
+
+        List<Person> persons = planData.getPersons().stream()
+                .map(PersonDTO::toPerson)
+                .collect(Collectors.toList());
+
+        Map<String, Person> personsByName = persons.stream()
+                .collect(Collectors.toMap(Person::name, p -> p, (a, b) -> a));
+
+        Map<ItemType, Double> rates = convertRates(planData.getRates());
+
+        // Setup processor to find year range
+        FinancialDataProcessor processor = new FinancialDataProcessor();
+        processor.setEntries(entries);
+
+        int firstDataYear = processor.getEarliestStartYear();
+        int lastDataYear = processor.getLatestEndYear();
+
+        // Calculate milestone years
+        List<Integer> milestoneYears = new ArrayList<>();
+        for (int year = firstDataYear + yearIncrement; year <= lastDataYear; year += yearIncrement) {
+            milestoneYears.add(year);
+        }
+        if (milestoneYears.isEmpty() || milestoneYears.get(milestoneYears.size() - 1) != lastDataYear) {
+            milestoneYears.add(lastDataYear);
+        }
+
+        // Define scenarios with bracket thresholds
+        double bracket12 = filingStatus == FilingStatus.SINGLE || filingStatus == FilingStatus.MARRIED_FILING_SEPARATELY
+                ? RothConversionOptimizationStrategy.SINGLE_12_PERCENT_BRACKET
+                : RothConversionOptimizationStrategy.MFJ_12_PERCENT_BRACKET;
+        double bracket22 = filingStatus == FilingStatus.SINGLE || filingStatus == FilingStatus.MARRIED_FILING_SEPARATELY
+                ? RothConversionOptimizationStrategy.SINGLE_22_PERCENT_BRACKET
+                : RothConversionOptimizationStrategy.MFJ_22_PERCENT_BRACKET;
+        double bracket24 = filingStatus == FilingStatus.SINGLE || filingStatus == FilingStatus.MARRIED_FILING_SEPARATELY
+                ? RothConversionOptimizationStrategy.SINGLE_24_PERCENT_BRACKET
+                : RothConversionOptimizationStrategy.MFJ_24_PERCENT_BRACKET;
+
+        // Generate baseline summaries (no conversion)
+        FinancialDataProcessor baselineProcessor = new FinancialDataProcessor();
+        baselineProcessor.setEntries(entries);
+        baselineProcessor.setTaxOptimizationStrategy(
+                new CompositeTaxOptimizationStrategy(
+                        new RMDOptimizationStrategy(),
+                        new ExpenseManagementStrategy(),
+                        new NoOpRothConversionStrategy(filingStatus)
+                )
+        );
+        YearlySummary[] baselineSummaries = baselineProcessor.generateYearlySummaries(rates, personsByName);
+
+        // Build rows for each scenario
+        List<RothComparisonRowDTO> rows = new ArrayList<>();
+
+        // Scenario 1: No Conversion (baseline)
+        rows.add(buildRothComparisonRow("No Conversion", null, entries, rates, personsByName,
+                filingStatus, milestoneYears, firstDataYear, baselineSummaries, baselineSummaries));
+
+        // Scenario 2: Fill 12% Bracket
+        rows.add(buildRothComparisonRow("Fill 12% Bracket", bracket12, entries, rates, personsByName,
+                filingStatus, milestoneYears, firstDataYear, baselineSummaries, null));
+
+        // Scenario 3: Fill 22% Bracket
+        rows.add(buildRothComparisonRow("Fill 22% Bracket", bracket22, entries, rates, personsByName,
+                filingStatus, milestoneYears, firstDataYear, baselineSummaries, null));
+
+        // Scenario 4: Fill 24% Bracket
+        rows.add(buildRothComparisonRow("Fill 24% Bracket", bracket24, entries, rates, personsByName,
+                filingStatus, milestoneYears, firstDataYear, baselineSummaries, null));
+
+        RothComparisonResponseDTO response = new RothComparisonResponseDTO();
+        response.setFirstDataYear(firstDataYear);
+        response.setMilestoneYears(milestoneYears);
+        response.setRows(rows);
+        return response;
+    }
+
+    private RothComparisonRowDTO buildRothComparisonRow(
+            String scenarioName,
+            Double bracketThreshold,
+            List<FinancialEntry> entries,
+            Map<ItemType, Double> rates,
+            Map<String, Person> personsByName,
+            FilingStatus filingStatus,
+            List<Integer> milestoneYears,
+            int firstDataYear,
+            YearlySummary[] baselineSummaries,
+            YearlySummary[] precomputedSummaries) {
+
+        YearlySummary[] summaries;
+        if (precomputedSummaries != null) {
+            summaries = precomputedSummaries;
+        } else {
+            FinancialDataProcessor processor = new FinancialDataProcessor();
+            processor.setEntries(entries);
+            processor.setTaxOptimizationStrategy(
+                    new CompositeTaxOptimizationStrategy(filingStatus, bracketThreshold)
+            );
+            summaries = processor.generateYearlySummaries(rates, personsByName);
+        }
+
+        // Track first shortfall year
+        Integer firstShortfallYear = null;
+        for (YearlySummary summary : summaries) {
+            if (summary.deficit() > 0) {
+                firstShortfallYear = summary.year();
+                break;
+            }
+        }
+
+        // Build cells for each milestone
+        List<RothComparisonCellDTO> cells = new ArrayList<>();
+        for (int milestoneYear : milestoneYears) {
+            int index = milestoneYear - firstDataYear;
+            if (index >= 0 && index < summaries.length) {
+                YearlySummary summary = summaries[index];
+                YearlySummary baseline = baselineSummaries[index];
+
+                // Calculate cumulative taxes
+                double cumulativeTaxes = 0;
+                for (int i = 0; i <= index; i++) {
+                    cumulativeTaxes += summaries[i].federalIncomeTax() + summaries[i].stateIncomeTax();
+                }
+
+                boolean hasShortfall = firstShortfallYear != null && firstShortfallYear <= milestoneYear;
+
+                cells.add(new RothComparisonCellDTO(
+                        milestoneYear,
+                        summary.netWorth(),
+                        summary.netWorth() - baseline.netWorth(),
+                        cumulativeTaxes,
+                        summary.rothAssets(),
+                        hasShortfall,
+                        hasShortfall ? firstShortfallYear : null
+                ));
+            }
+        }
+
+        return new RothComparisonRowDTO(scenarioName, bracketThreshold, cells);
     }
 }

@@ -10,7 +10,28 @@ This application models long-term financial projections including:
 - Required Minimum Distribution (RMD) calculations
 - Tax-optimized withdrawal strategies
 - Roth conversion optimization
-- Multi-year financial summaries with CSV export
+- Sensitivity analysis for growth rate scenarios
+- Roth conversion strategy comparison
+- Multi-year financial summaries with PDF and CSV export
+
+## User Interfaces
+
+The application offers two user interfaces:
+
+### Web Interface (Spring Boot + React)
+A modern web-based interface accessible through any browser. Features include:
+- Tabbed interface for managing Persons, Financial Entries, and Rates
+- Interactive results display with PDF generation
+- Sensitivity analysis tool
+- Roth conversion comparison tool
+- Save/Load financial plans as JSON files
+
+### Desktop Interface (JavaFX)
+A native desktop application with:
+- Full-featured tabbed interface
+- Embedded PDF viewer for generated plans
+- Native file dialogs for save/load operations
+- Sensitivity analysis and Roth comparison tabs
 
 ## Features
 
@@ -51,13 +72,36 @@ The application implements a composite strategy pattern with four optimization s
 - Married Filing Separately
 - Head of Household
 
+### Sensitivity Analysis
+
+Analyze how different growth rates affect your net worth over time:
+- **Rate Types**: Expense, Income, Qualified, Non-Qualified, Roth, and Cash growth rates
+- **Configurable Range**: Set minimum and maximum rates with custom increments
+- **Milestone Years**: View projected net worth at 5-year intervals
+- **Shortfall Detection**: Identifies when deficits occur before milestones
+
+### Roth Conversion Comparison
+
+Compare different Roth conversion strategies side-by-side:
+- **No Conversion**: Baseline scenario with no Roth conversions
+- **Fill 12% Bracket**: Convert enough to fill the 12% federal tax bracket
+- **Fill 22% Bracket**: Convert enough to fill the 22% federal tax bracket
+- **Fill 24% Bracket**: Convert enough to fill the 24% federal tax bracket
+
+For each strategy, view:
+- Net worth at milestone years
+- Delta compared to baseline (no conversion)
+- Cumulative taxes paid
+- Roth account balance
+
 ## Project Structure
 
 ```
 financial-planning/
 ├── src/
 │   ├── main/java/rg/financialplanning/
-│   │   ├── FinancialPlanner.java          # Main entry point
+│   │   ├── FinancialPlanner.java          # CLI entry point
+│   │   ├── FinancialPlannerApp.java       # JavaFX entry point
 │   │   ├── calculator/                     # Tax calculators
 │   │   │   ├── FederalTaxCalculator.java
 │   │   │   ├── NJStateTaxCalculator.java
@@ -77,14 +121,43 @@ financial-planning/
 │   │   │   ├── FinancialDataProcessor.java
 │   │   │   ├── PersonParser.java
 │   │   │   └── ItemTypePercentageParser.java
-│   │   └── strategy/                       # Tax optimization strategies
-│   │       ├── TaxOptimizationStrategy.java
-│   │       ├── CompositeTaxOptimizationStrategy.java
-│   │       ├── RMDOptimizationStrategy.java
-│   │       ├── ExpenseManagementStrategy.java
-│   │       ├── RothConversionOptimizationStrategy.java
-│   │       └── TaxCalculationStrategy.java
-│   └── test/java/rg/financialplanning/    # Unit tests (466 tests)
+│   │   ├── strategy/                       # Tax optimization strategies
+│   │   │   ├── TaxOptimizationStrategy.java
+│   │   │   ├── CompositeTaxOptimizationStrategy.java
+│   │   │   ├── RMDOptimizationStrategy.java
+│   │   │   ├── ExpenseManagementStrategy.java
+│   │   │   ├── RothConversionOptimizationStrategy.java
+│   │   │   └── TaxCalculationStrategy.java
+│   │   ├── ui/                             # JavaFX desktop UI
+│   │   │   ├── MainController.java
+│   │   │   ├── PersonsTabController.java
+│   │   │   ├── EntriesTabController.java
+│   │   │   ├── RatesTabController.java
+│   │   │   ├── ResultsTabController.java
+│   │   │   ├── SensitivityTabController.java
+│   │   │   └── RothComparisonTabController.java
+│   │   └── web/                            # Spring Boot web backend
+│   │       ├── FinancialPlannerWebApp.java
+│   │       ├── controller/
+│   │       │   └── PlanController.java
+│   │       ├── service/
+│   │       │   └── FinancialPlanService.java
+│   │       ├── dto/                        # Data transfer objects
+│   │       └── config/
+│   └── test/java/rg/financialplanning/    # Unit tests
+├── frontend/                               # React web frontend
+│   ├── src/
+│   │   ├── App.tsx
+│   │   ├── components/
+│   │   │   ├── PersonsTab.tsx
+│   │   │   ├── EntriesTab.tsx
+│   │   │   ├── RatesTab.tsx
+│   │   │   ├── ResultsTab.tsx
+│   │   │   ├── SensitivityTab.tsx
+│   │   │   └── RothComparisonTab.tsx
+│   │   ├── context/
+│   │   └── services/
+│   └── package.json
 ├── sample_data.csv                         # Sample financial entries
 ├── persons.csv                             # Person definitions
 ├── item_percentages.csv                    # Annual growth rates
@@ -95,6 +168,7 @@ financial-planning/
 
 - Java 17 or higher
 - Maven 3.6 or higher
+- Node.js 20+ (for web interface development, automatically installed by Maven during build)
 
 ## Installation
 
@@ -116,7 +190,44 @@ financial-planning/
 
 ## Usage
 
-### Running the Application
+### Running the Web Interface
+
+Build and run the Spring Boot application with embedded React frontend:
+
+```bash
+mvn clean package
+java -jar target/financial-planning-1.0-SNAPSHOT-web.jar
+```
+
+Then open http://localhost:8080 in your browser.
+
+For development (backend + frontend separately):
+
+```bash
+# Terminal 1: Start the Spring Boot backend
+mvn spring-boot:run
+
+# Terminal 2: Start the React frontend (from frontend directory)
+cd frontend
+npm start
+```
+
+### Running the Desktop Interface (JavaFX)
+
+Run the JavaFX desktop application:
+
+```bash
+mvn javafx:run -Pdesktop
+```
+
+Or build and run directly:
+
+```bash
+mvn clean compile -Pdesktop
+mvn javafx:run -Pdesktop
+```
+
+### Running the CLI
 
 ```bash
 mvn exec:java -Dexec.mainClass="rg.financialplanning.FinancialPlanner" \
@@ -126,15 +237,16 @@ mvn exec:java -Dexec.mainClass="rg.financialplanning.FinancialPlanner" \
 Or compile and run directly:
 
 ```bash
-mvn package
+mvn package -Dskip.frontend=true
 java -cp target/classes rg.financialplanning.FinancialPlanner sample_data.csv persons.csv item_percentages.csv
 ```
 
 ### Output
 
 The application generates:
-1. Console output with yearly summaries
-2. `FinancialPlanner-Out.csv` - CSV export of all yearly data
+1. PDF reports with charts and yearly summaries
+2. Console output with yearly summaries (CLI mode)
+3. `FinancialPlanner-Out.csv` - CSV export of all yearly data
 
 ## Input File Formats
 
@@ -245,11 +357,17 @@ Run the full test suite:
 mvn test
 ```
 
-The project includes 466 unit tests covering:
+Skip frontend build during testing:
+```bash
+mvn test -Dskip.frontend=true
+```
+
+The project includes comprehensive unit tests covering:
 - All tax calculators
 - Model classes
 - CSV parsers
 - Tax optimization strategies
+- Web service layer
 
 ## License
 

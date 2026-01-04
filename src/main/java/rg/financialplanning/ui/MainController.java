@@ -50,6 +50,7 @@ public class MainController {
     private RatesTabController ratesTabController;
     private ResultsTabController resultsTabController;
     private SensitivityTabController sensitivityTabController;
+    private RothComparisonTabController rothComparisonTabController;
 
     // Status
     private Label statusLabel;
@@ -117,7 +118,12 @@ public class MainController {
         Tab sensitivityTab = new Tab("Sensitivity", sensitivityTabController.getRoot());
         sensitivityTab.setClosable(false);
 
-        tabPane.getTabs().addAll(personsTab, entriesTab, ratesTab, resultsTab, sensitivityTab);
+        // Roth Comparison Tab
+        rothComparisonTabController = new RothComparisonTabController(persons, entries, rates);
+        Tab rothComparisonTab = new Tab("Roth Comparison", rothComparisonTabController.getRoot());
+        rothComparisonTab.setClosable(false);
+
+        tabPane.getTabs().addAll(personsTab, entriesTab, ratesTab, resultsTab, sensitivityTab, rothComparisonTab);
     }
 
     private void initializeBottomBar() {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FinancialPlan, RateConfig, SensitivityAnalysisRequest, SensitivityAnalysisResponse } from '../types';
+import { FinancialPlan, RateConfig, SensitivityAnalysisRequest, SensitivityAnalysisResponse, RothComparisonRequest, RothComparisonResponse } from '../types';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
 
@@ -46,6 +46,11 @@ export const planApi = {
 
   runSensitivityAnalysis: async (request: SensitivityAnalysisRequest): Promise<SensitivityAnalysisResponse> => {
     const response = await api.post('/plan/sensitivity-analysis', request);
+    return response.data;
+  },
+
+  runRothComparison: async (request: RothComparisonRequest): Promise<RothComparisonResponse> => {
+    const response = await api.post('/plan/roth-comparison', request);
     return response.data;
   },
 };
