@@ -45,3 +45,43 @@ export const ITEM_TYPES = [
 ] as const;
 
 export type ItemType = typeof ITEM_TYPES[number]['value'];
+
+// Sensitivity Analysis Types
+export type SensitivityRateType = 'EXPENSE' | 'ALL_ASSETS' | 'QUALIFIED' | 'NON_QUALIFIED' | 'ROTH';
+
+export const SENSITIVITY_RATE_TYPES: { value: SensitivityRateType; label: string; defaultMin: number; defaultMax: number }[] = [
+  { value: 'EXPENSE', label: 'Expense Growth', defaultMin: 2, defaultMax: 5 },
+  { value: 'ALL_ASSETS', label: 'All Asset Growth (Qualified + Non-Qualified + Roth)', defaultMin: 4, defaultMax: 8 },
+  { value: 'QUALIFIED', label: 'Qualified Asset Growth', defaultMin: 4, defaultMax: 8 },
+  { value: 'NON_QUALIFIED', label: 'Non-Qualified Asset Growth', defaultMin: 4, defaultMax: 8 },
+  { value: 'ROTH', label: 'Roth Asset Growth', defaultMin: 4, defaultMax: 8 },
+];
+
+export interface SensitivityAnalysisRequest {
+  planData: FinancialPlan;
+  rateType: SensitivityRateType;
+  minRate: number;
+  maxRate: number;
+  rateIncrement?: number;
+  yearIncrement?: number;
+}
+
+export interface SensitivityCell {
+  year: number;
+  netWorth: number | null;
+  hasShortfall: boolean;
+  shortfallYear: number | null;
+}
+
+export interface SensitivityRow {
+  rate: number;
+  cells: SensitivityCell[];
+}
+
+export interface SensitivityAnalysisResponse {
+  rateType: string;
+  rateTypeLabel: string;
+  firstDataYear: number;
+  milestoneYears: number[];
+  rows: SensitivityRow[];
+}

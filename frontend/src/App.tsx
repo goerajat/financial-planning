@@ -4,9 +4,10 @@ import PersonsTab from './components/PersonsTab';
 import EntriesTab from './components/EntriesTab';
 import RatesTab from './components/RatesTab';
 import ResultsTab from './components/ResultsTab';
+import SensitivityTab from './components/SensitivityTab';
 import './App.css';
 
-type TabName = 'persons' | 'entries' | 'rates' | 'results';
+type TabName = 'persons' | 'entries' | 'rates' | 'results' | 'sensitivity';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabName>('persons');
@@ -30,6 +31,7 @@ const AppContent: React.FC = () => {
     { id: 'entries', label: 'Entries' },
     { id: 'rates', label: 'Rates' },
     { id: 'results', label: 'Results' },
+    { id: 'sensitivity', label: 'Sensitivity' },
   ];
 
   return (
@@ -66,6 +68,7 @@ const AppContent: React.FC = () => {
         {activeTab === 'entries' && <EntriesTab />}
         {activeTab === 'rates' && <RatesTab />}
         {activeTab === 'results' && <ResultsTab />}
+        {activeTab === 'sensitivity' && <SensitivityTab />}
       </main>
     </div>
   );

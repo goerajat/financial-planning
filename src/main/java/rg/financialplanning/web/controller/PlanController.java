@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import rg.financialplanning.web.dto.FinancialPlanDTO;
 import rg.financialplanning.web.dto.RateDTO;
+import rg.financialplanning.web.dto.SensitivityAnalysisRequestDTO;
+import rg.financialplanning.web.dto.SensitivityAnalysisResponseDTO;
 import rg.financialplanning.web.service.FinancialPlanService;
 
 import java.io.IOException;
@@ -73,5 +75,18 @@ public class PlanController {
     @GetMapping("/default-rates")
     public ResponseEntity<List<RateDTO>> getDefaultRates() {
         return ResponseEntity.ok(planService.getDefaultRates());
+    }
+
+    @PostMapping("/sensitivity-analysis")
+    public ResponseEntity<SensitivityAnalysisResponseDTO> runSensitivityAnalysis(
+            @RequestBody SensitivityAnalysisRequestDTO request) {
+        try {
+            SensitivityAnalysisResponseDTO response = planService.runSensitivityAnalysis(request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

@@ -49,6 +49,7 @@ public class MainController {
     private EntriesTabController entriesTabController;
     private RatesTabController ratesTabController;
     private ResultsTabController resultsTabController;
+    private SensitivityTabController sensitivityTabController;
 
     // Status
     private Label statusLabel;
@@ -111,7 +112,12 @@ public class MainController {
         Tab resultsTab = new Tab("Results", resultsTabController.getRoot());
         resultsTab.setClosable(false);
 
-        tabPane.getTabs().addAll(personsTab, entriesTab, ratesTab, resultsTab);
+        // Sensitivity Analysis Tab
+        sensitivityTabController = new SensitivityTabController(persons, entries, rates);
+        Tab sensitivityTab = new Tab("Sensitivity", sensitivityTabController.getRoot());
+        sensitivityTab.setClosable(false);
+
+        tabPane.getTabs().addAll(personsTab, entriesTab, ratesTab, resultsTab, sensitivityTab);
     }
 
     private void initializeBottomBar() {
