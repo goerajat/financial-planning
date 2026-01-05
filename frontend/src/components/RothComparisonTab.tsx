@@ -5,7 +5,7 @@ import { RothComparisonResponse, RothComparisonCell, FilingStatus, FILING_STATUS
 import './RothComparisonTab.css';
 
 const RothComparisonTab: React.FC = () => {
-  const { persons, entries, rates } = usePlan();
+  const { persons, entries, rates, statesByYear } = usePlan();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<RothComparisonResponse | null>(null);
@@ -40,6 +40,7 @@ const RothComparisonTab: React.FC = () => {
         persons,
         entries,
         rates,
+        statesByYear,
       };
 
       const response = await planApi.runRothComparison({

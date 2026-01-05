@@ -12,7 +12,7 @@ import './Tab.css';
 import './SensitivityTab.css';
 
 const SensitivityTab: React.FC = () => {
-  const { persons, entries, rates } = usePlan();
+  const { persons, entries, rates, statesByYear } = usePlan();
 
   const [rateType, setRateType] = useState<SensitivityRateType>('EXPENSE');
   const [minRate, setMinRate] = useState<number>(2.0);
@@ -50,7 +50,7 @@ const SensitivityTab: React.FC = () => {
 
     try {
       const request = {
-        planData: { persons, entries, rates },
+        planData: { persons, entries, rates, statesByYear },
         rateType,
         minRate,
         maxRate,

@@ -3,16 +3,17 @@ import { PlanProvider, usePlan } from './context/PlanContext';
 import PersonsTab from './components/PersonsTab';
 import EntriesTab from './components/EntriesTab';
 import RatesTab from './components/RatesTab';
+import StatesTab from './components/StatesTab';
 import ResultsTab from './components/ResultsTab';
 import SensitivityTab from './components/SensitivityTab';
 import RothComparisonTab from './components/RothComparisonTab';
 import './App.css';
 
-type TabName = 'persons' | 'entries' | 'rates' | 'results' | 'sensitivity' | 'roth-comparison';
+type TabName = 'persons' | 'entries' | 'rates' | 'states' | 'results' | 'sensitivity' | 'roth-comparison';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabName>('persons');
-  const { savePlan, loadPlan, isLoading } = usePlan();
+  const { savePlan, loadPlan, isLoading, statesByYear, addStateByYear, updateStateByYear, deleteStateByYear } = usePlan();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLoad = () => {
@@ -31,6 +32,7 @@ const AppContent: React.FC = () => {
     { id: 'persons', label: 'Persons' },
     { id: 'entries', label: 'Entries' },
     { id: 'rates', label: 'Rates' },
+    { id: 'states', label: 'States' },
     { id: 'results', label: 'Results' },
     { id: 'sensitivity', label: 'Sensitivity' },
     { id: 'roth-comparison', label: 'Roth Comparison' },
@@ -69,6 +71,14 @@ const AppContent: React.FC = () => {
         {activeTab === 'persons' && <PersonsTab />}
         {activeTab === 'entries' && <EntriesTab />}
         {activeTab === 'rates' && <RatesTab />}
+        {activeTab === 'states' && (
+          <StatesTab
+            statesByYear={statesByYear}
+            onAdd={addStateByYear}
+            onUpdate={updateStateByYear}
+            onDelete={deleteStateByYear}
+          />
+        )}
         {activeTab === 'results' && <ResultsTab />}
         {activeTab === 'sensitivity' && <SensitivityTab />}
         {activeTab === 'roth-comparison' && <RothComparisonTab />}

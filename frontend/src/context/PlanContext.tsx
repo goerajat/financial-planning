@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { Person, FinancialEntry, FinancialPlan, RateConfig } from '../types';
+import { Person, FinancialEntry, FinancialPlan, RateConfig, StateByYear } from '../types';
 import { planApi } from '../services/api';
 
 interface PlanContextType {
@@ -7,6 +7,7 @@ interface PlanContextType {
   entries: FinancialEntry[];
   rates: { [key: string]: number };
   rateConfigs: RateConfig[];
+  statesByYear: StateByYear[];
   pdfBlob: Blob | null;
   isLoading: boolean;
   error: string | null;
@@ -21,6 +22,10 @@ interface PlanContextType {
 
   updateRate: (itemType: string, rate: number) => void;
 
+  addStateByYear: (state: StateByYear) => void;
+  updateStateByYear: (index: number, state: StateByYear) => void;
+  deleteStateByYear: (index: number) => void;
+
   generatePdf: () => Promise<void>;
   savePlan: () => void;
   loadPlan: (file: File) => Promise<void>;
@@ -34,6 +39,7 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [entries, setEntries] = useState<FinancialEntry[]>([]);
   const [rates, setRates] = useState<{ [key: string]: number }>({});
   const [rateConfigs, setRateConfigs] = useState<RateConfig[]>([]);
+  const [statesByYear, setStatesByYear] = useState<StateByYear[]>([]);
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,11 +115,27 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRates(prev => ({ ...prev, [itemType]: rate }));
   }, []);
 
+  const addStateByYear = useCallback((state: StateByYear) => {
+    setStatesByYear(prev => [...prev, state]);
+  }, []);
+
+  const updateStateByYear = useCallback((index: number, state: StateByYear) => {
+    setStatesByYear(prev => {
+      const updated = [...prev];
+      updated[index] = state;
+      return updated;
+    });
+  }, []);
+
+  const deleteStateByYear = useCallback((index: number) => {
+    setStatesByYear(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
   const generatePdf = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const planData: FinancialPlan = { persons, entries, rates };
+      const planData: FinancialPlan = { persons, entries, rates, statesByYear };
       const blob = await planApi.generatePdf(planData);
       setPdfBlob(blob);
     } catch (err: any) {
@@ -121,10 +143,10 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false);
     }
-  }, [persons, entries, rates]);
+  }, [persons, entries, rates, statesByYear]);
 
   const savePlan = useCallback(() => {
-    const planData: FinancialPlan = { persons, entries, rates };
+    const planData: FinancialPlan = { persons, entries, rates, statesByYear };
     const json = JSON.stringify(planData, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -133,7 +155,7 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
     a.download = 'financial_plan.json';
     a.click();
     URL.revokeObjectURL(url);
-  }, [persons, entries, rates]);
+  }, [persons, entries, rates, statesByYear]);
 
   const loadPlan = useCallback(async (file: File) => {
     setIsLoading(true);
@@ -145,6 +167,7 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (planData.rates) {
         setRates(planData.rates);
       }
+      setStatesByYear(planData.statesByYear || []);
       // Update next entry ID
       const maxId = Math.max(0, ...planData.entries.map(e => e.id || 0));
       setNextEntryId(maxId + 1);
@@ -163,6 +186,7 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
       entries,
       rates,
       rateConfigs,
+      statesByYear,
       pdfBlob,
       isLoading,
       error,
@@ -173,6 +197,9 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateEntry,
       deleteEntry,
       updateRate,
+      addStateByYear,
+      updateStateByYear,
+      deleteStateByYear,
       generatePdf,
       savePlan,
       loadPlan,
