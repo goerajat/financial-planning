@@ -24,11 +24,15 @@ import rg.financialplanning.web.dto.RothComparisonResponseDTO;
 import rg.financialplanning.web.dto.RothComparisonRowDTO;
 import rg.financialplanning.web.dto.RothComparisonCellDTO;
 import rg.financialplanning.model.FilingStatus;
+import rg.financialplanning.model.State;
+import rg.financialplanning.model.StateByYear;
 import rg.financialplanning.strategy.CompositeTaxOptimizationStrategy;
 import rg.financialplanning.strategy.NoOpRothConversionStrategy;
 import rg.financialplanning.strategy.RMDOptimizationStrategy;
 import rg.financialplanning.strategy.ExpenseManagementStrategy;
 import rg.financialplanning.strategy.RothConversionOptimizationStrategy;
+import rg.financialplanning.strategy.TaxCalculationStrategy;
+import rg.financialplanning.web.dto.StateByYearDTO;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -124,6 +128,23 @@ public class FinancialPlanService {
             rates.putIfAbsent(defaultEntry.getKey(), defaultEntry.getValue());
         }
         return rates;
+    }
+
+    private List<StateByYear> convertStatesByYear(List<StateByYearDTO> statesByYearDTO) {
+        if (statesByYearDTO == null || statesByYearDTO.isEmpty()) {
+            return List.of();
+        }
+
+        List<StateByYear> statesByYear = new ArrayList<>();
+        for (StateByYearDTO dto : statesByYearDTO) {
+            try {
+                State state = State.valueOf(dto.getState());
+                statesByYear.add(new StateByYear(state, dto.getStartYear(), dto.getEndYear()));
+            } catch (IllegalArgumentException e) {
+                // Skip invalid states
+            }
+        }
+        return statesByYear;
     }
 
     private SaveData convertToSaveData(FinancialPlanDTO planData) {
@@ -364,6 +385,9 @@ public class FinancialPlanService {
                 ? RothConversionOptimizationStrategy.SINGLE_24_PERCENT_BRACKET
                 : RothConversionOptimizationStrategy.MFJ_24_PERCENT_BRACKET;
 
+        // Convert states by year
+        List<StateByYear> statesByYear = convertStatesByYear(planData.getStatesByYear());
+
         // Generate baseline summaries (no conversion)
         FinancialDataProcessor baselineProcessor = new FinancialDataProcessor();
         baselineProcessor.setEntries(entries);
@@ -371,7 +395,8 @@ public class FinancialPlanService {
                 new CompositeTaxOptimizationStrategy(
                         new RMDOptimizationStrategy(),
                         new ExpenseManagementStrategy(),
-                        new NoOpRothConversionStrategy(filingStatus)
+                        new NoOpRothConversionStrategy(filingStatus),
+                        new TaxCalculationStrategy(filingStatus, statesByYear)
                 )
         );
         YearlySummary[] baselineSummaries = baselineProcessor.generateYearlySummaries(rates, personsByName);
@@ -381,19 +406,19 @@ public class FinancialPlanService {
 
         // Scenario 1: No Conversion (baseline)
         rows.add(buildRothComparisonRow("No Conversion", null, entries, rates, personsByName,
-                filingStatus, milestoneYears, firstDataYear, baselineSummaries, baselineSummaries));
+                filingStatus, statesByYear, milestoneYears, firstDataYear, baselineSummaries, baselineSummaries));
 
         // Scenario 2: Fill 12% Bracket
         rows.add(buildRothComparisonRow("Fill 12% Bracket", bracket12, entries, rates, personsByName,
-                filingStatus, milestoneYears, firstDataYear, baselineSummaries, null));
+                filingStatus, statesByYear, milestoneYears, firstDataYear, baselineSummaries, null));
 
         // Scenario 3: Fill 22% Bracket
         rows.add(buildRothComparisonRow("Fill 22% Bracket", bracket22, entries, rates, personsByName,
-                filingStatus, milestoneYears, firstDataYear, baselineSummaries, null));
+                filingStatus, statesByYear, milestoneYears, firstDataYear, baselineSummaries, null));
 
         // Scenario 4: Fill 24% Bracket
         rows.add(buildRothComparisonRow("Fill 24% Bracket", bracket24, entries, rates, personsByName,
-                filingStatus, milestoneYears, firstDataYear, baselineSummaries, null));
+                filingStatus, statesByYear, milestoneYears, firstDataYear, baselineSummaries, null));
 
         RothComparisonResponseDTO response = new RothComparisonResponseDTO();
         response.setFirstDataYear(firstDataYear);
@@ -409,6 +434,7 @@ public class FinancialPlanService {
             Map<ItemType, Double> rates,
             Map<String, Person> personsByName,
             FilingStatus filingStatus,
+            List<StateByYear> statesByYear,
             List<Integer> milestoneYears,
             int firstDataYear,
             YearlySummary[] baselineSummaries,
@@ -421,7 +447,7 @@ public class FinancialPlanService {
             FinancialDataProcessor processor = new FinancialDataProcessor();
             processor.setEntries(entries);
             processor.setTaxOptimizationStrategy(
-                    new CompositeTaxOptimizationStrategy(filingStatus, bracketThreshold)
+                    new CompositeTaxOptimizationStrategy(filingStatus, statesByYear, bracketThreshold)
             );
             summaries = processor.generateYearlySummaries(rates, personsByName);
         }

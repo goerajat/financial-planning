@@ -21,10 +21,25 @@ export interface RateConfig {
   description: string;
 }
 
+export interface StateByYear {
+  state: State;
+  startYear: number;
+  endYear: number;
+}
+
+export type State = 'NJ' | 'NY' | 'FL';
+
+export const STATES: { value: State; label: string }[] = [
+  { value: 'NJ', label: 'New Jersey' },
+  { value: 'NY', label: 'New York' },
+  { value: 'FL', label: 'Florida' },
+];
+
 export interface FinancialPlan {
   persons: Person[];
   entries: FinancialEntry[];
   rates: { [key: string]: number };
+  statesByYear?: StateByYear[];
 }
 
 export const ITEM_TYPES = [

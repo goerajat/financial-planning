@@ -1,7 +1,10 @@
 package rg.financialplanning.strategy;
 
 import rg.financialplanning.model.FilingStatus;
+import rg.financialplanning.model.StateByYear;
 import rg.financialplanning.model.YearlySummary;
+
+import java.util.List;
 
 /**
  * Composite tax optimization strategy that applies multiple strategies in sequence.
@@ -60,23 +63,34 @@ public class CompositeTaxOptimizationStrategy implements TaxOptimizationStrategy
      * @param filingStatus the filing status for tax calculations
      */
     public CompositeTaxOptimizationStrategy(FilingStatus filingStatus) {
+        this(filingStatus, List.of());
+    }
+
+    /**
+     * Creates a composite strategy with the specified filing status and state configuration.
+     *
+     * @param filingStatus the filing status for tax calculations
+     * @param statesByYear list of state configurations by year
+     */
+    public CompositeTaxOptimizationStrategy(FilingStatus filingStatus, List<StateByYear> statesByYear) {
         this.rmdStrategy = new RMDOptimizationStrategy();
         this.expenseStrategy = new ExpenseManagementStrategy();
         this.rothConversionStrategy = new RothConversionOptimizationStrategy(filingStatus);
-        this.taxCalculationStrategy = new TaxCalculationStrategy(filingStatus);
+        this.taxCalculationStrategy = new TaxCalculationStrategy(filingStatus, statesByYear);
     }
 
     /**
      * Creates a composite strategy with custom settings.
      *
      * @param filingStatus the filing status for tax calculations
+     * @param statesByYear list of state configurations by year
      * @param rothConversionTargetBracket the income threshold for Roth conversions
      */
-    public CompositeTaxOptimizationStrategy(FilingStatus filingStatus, double rothConversionTargetBracket) {
+    public CompositeTaxOptimizationStrategy(FilingStatus filingStatus, List<StateByYear> statesByYear, double rothConversionTargetBracket) {
         this.rmdStrategy = new RMDOptimizationStrategy();
         this.expenseStrategy = new ExpenseManagementStrategy();
         this.rothConversionStrategy = new RothConversionOptimizationStrategy(filingStatus, rothConversionTargetBracket);
-        this.taxCalculationStrategy = new TaxCalculationStrategy(filingStatus);
+        this.taxCalculationStrategy = new TaxCalculationStrategy(filingStatus, statesByYear);
     }
 
     /**

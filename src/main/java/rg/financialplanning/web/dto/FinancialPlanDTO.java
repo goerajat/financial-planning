@@ -9,6 +9,7 @@ public class FinancialPlanDTO {
     private List<PersonDTO> persons = new ArrayList<>();
     private List<FinancialEntryDTO> entries = new ArrayList<>();
     private Map<String, Double> rates = new HashMap<>();
+    private List<StateByYearDTO> statesByYear = new ArrayList<>();
 
     public FinancialPlanDTO() {
     }
@@ -17,6 +18,13 @@ public class FinancialPlanDTO {
         this.persons = persons;
         this.entries = entries;
         this.rates = rates;
+    }
+
+    public FinancialPlanDTO(List<PersonDTO> persons, List<FinancialEntryDTO> entries, Map<String, Double> rates, List<StateByYearDTO> statesByYear) {
+        this.persons = persons;
+        this.entries = entries;
+        this.rates = rates;
+        this.statesByYear = statesByYear;
     }
 
     public List<PersonDTO> getPersons() {
@@ -41,5 +49,13 @@ public class FinancialPlanDTO {
 
     public void setRates(Map<String, Double> rates) {
         this.rates = rates;
+    }
+
+    public List<StateByYearDTO> getStatesByYear() {
+        return statesByYear;
+    }
+
+    public void setStatesByYear(List<StateByYearDTO> statesByYear) {
+        this.statesByYear = statesByYear;
     }
 }
