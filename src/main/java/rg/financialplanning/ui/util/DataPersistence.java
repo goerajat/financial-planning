@@ -4,9 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import javafx.collections.ObservableList;
 import rg.financialplanning.model.ItemType;
+import rg.financialplanning.model.State;
 import rg.financialplanning.ui.model.ObservableFinancialEntry;
 import rg.financialplanning.ui.model.ObservableItemTypeRate;
 import rg.financialplanning.ui.model.ObservablePerson;
+import rg.financialplanning.ui.model.ObservableStateByYear;
 import rg.financialplanning.ui.model.SaveData;
 
 import java.io.*;
@@ -30,16 +32,18 @@ public class DataPersistence {
     /**
      * Saves the current data to a JSON file.
      *
-     * @param file    the file to save to
-     * @param persons the list of persons
-     * @param entries the list of financial entries
-     * @param rates   the list of rates
+     * @param file         the file to save to
+     * @param persons      the list of persons
+     * @param entries      the list of financial entries
+     * @param rates        the list of rates
+     * @param statesByYear the list of state configurations by year
      * @throws IOException if writing fails
      */
     public static void saveToFile(File file,
                                    ObservableList<ObservablePerson> persons,
                                    ObservableList<ObservableFinancialEntry> entries,
-                                   ObservableList<ObservableItemTypeRate> rates) throws IOException {
+                                   ObservableList<ObservableItemTypeRate> rates,
+                                   ObservableList<ObservableStateByYear> statesByYear) throws IOException {
         SaveData saveData = new SaveData();
 
         // Convert persons
@@ -70,6 +74,17 @@ public class DataPersistence {
         }
         saveData.setRates(rateMap);
 
+        // Convert states by year
+        List<SaveData.StateByYearData> statesByYearDataList = new ArrayList<>();
+        for (ObservableStateByYear stateByYear : statesByYear) {
+            statesByYearDataList.add(new SaveData.StateByYearData(
+                    stateByYear.getState().name(),
+                    stateByYear.getStartYear(),
+                    stateByYear.getEndYear()
+            ));
+        }
+        saveData.setStatesByYear(statesByYearDataList);
+
         // Write to file
         String json = GSON.toJson(saveData);
         Files.writeString(file.toPath(), json, StandardCharsets.UTF_8);
@@ -78,22 +93,25 @@ public class DataPersistence {
     /**
      * Loads data from a JSON file.
      *
-     * @param file    the file to load from
-     * @param persons the list to populate with persons
-     * @param entries the list to populate with financial entries
-     * @param rates   the list to update with rates
+     * @param file         the file to load from
+     * @param persons      the list to populate with persons
+     * @param entries      the list to populate with financial entries
+     * @param rates        the list to update with rates
+     * @param statesByYear the list to populate with state configurations
      * @throws IOException if reading fails
      */
     public static void loadFromFile(File file,
                                      ObservableList<ObservablePerson> persons,
                                      ObservableList<ObservableFinancialEntry> entries,
-                                     ObservableList<ObservableItemTypeRate> rates) throws IOException {
+                                     ObservableList<ObservableItemTypeRate> rates,
+                                     ObservableList<ObservableStateByYear> statesByYear) throws IOException {
         String json = Files.readString(file.toPath(), StandardCharsets.UTF_8);
         SaveData saveData = GSON.fromJson(json, SaveData.class);
 
         // Clear existing data
         persons.clear();
         entries.clear();
+        statesByYear.clear();
 
         // Load persons
         if (saveData.getPersons() != null) {
@@ -129,6 +147,22 @@ public class DataPersistence {
                 String key = rate.getItemType().name();
                 if (saveData.getRates().containsKey(key)) {
                     rate.setRate(saveData.getRates().get(key));
+                }
+            }
+        }
+
+        // Load states by year
+        if (saveData.getStatesByYear() != null) {
+            for (SaveData.StateByYearData stateByYearData : saveData.getStatesByYear()) {
+                try {
+                    State state = State.valueOf(stateByYearData.getState());
+                    statesByYear.add(new ObservableStateByYear(
+                            state,
+                            stateByYearData.getStartYear(),
+                            stateByYearData.getEndYear()
+                    ));
+                } catch (IllegalArgumentException e) {
+                    // Skip invalid states
                 }
             }
         }

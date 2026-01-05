@@ -13,6 +13,7 @@ import rg.financialplanning.model.FilingStatus;
 import rg.financialplanning.model.FinancialEntry;
 import rg.financialplanning.model.ItemType;
 import rg.financialplanning.model.Person;
+import rg.financialplanning.model.StateByYear;
 import rg.financialplanning.model.YearlySummary;
 import rg.financialplanning.parser.FinancialDataProcessor;
 import rg.financialplanning.strategy.CompositeTaxOptimizationStrategy;
@@ -23,6 +24,7 @@ import rg.financialplanning.strategy.RothConversionOptimizationStrategy;
 import rg.financialplanning.ui.model.ObservableFinancialEntry;
 import rg.financialplanning.ui.model.ObservableItemTypeRate;
 import rg.financialplanning.ui.model.ObservablePerson;
+import rg.financialplanning.ui.model.ObservableStateByYear;
 
 import java.text.NumberFormat;
 import java.util.*;
@@ -38,6 +40,7 @@ public class RothComparisonTabController {
     private final ObservableList<ObservablePerson> persons;
     private final ObservableList<ObservableFinancialEntry> entries;
     private final ObservableList<ObservableItemTypeRate> rates;
+    private final ObservableList<ObservableStateByYear> statesByYear;
 
     // Input controls
     private ComboBox<FilingStatusOption> filingStatusComboBox;
@@ -62,10 +65,12 @@ public class RothComparisonTabController {
 
     public RothComparisonTabController(ObservableList<ObservablePerson> persons,
                                         ObservableList<ObservableFinancialEntry> entries,
-                                        ObservableList<ObservableItemTypeRate> rates) {
+                                        ObservableList<ObservableItemTypeRate> rates,
+                                        ObservableList<ObservableStateByYear> statesByYear) {
         this.persons = persons;
         this.entries = entries;
         this.rates = rates;
+        this.statesByYear = statesByYear;
         this.root = new VBox(15);
         this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.US);
         this.currencyFormat.setMaximumFractionDigits(0);
@@ -357,10 +362,14 @@ public class RothComparisonTabController {
         if (precomputedSummaries != null) {
             summaries = precomputedSummaries;
         } else {
+            List<StateByYear> statesByYearList = statesByYear.stream()
+                    .map(ObservableStateByYear::toStateByYear)
+                    .collect(Collectors.toList());
+
             FinancialDataProcessor processor = new FinancialDataProcessor();
             processor.setEntries(entries);
             processor.setTaxOptimizationStrategy(
-                    new CompositeTaxOptimizationStrategy(filingStatus, bracketThreshold)
+                    new CompositeTaxOptimizationStrategy(filingStatus, statesByYearList, bracketThreshold)
             );
             summaries = processor.generateYearlySummaries(rates, personsByName);
         }

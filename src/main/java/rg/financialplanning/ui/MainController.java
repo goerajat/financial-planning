@@ -15,11 +15,15 @@ import rg.financialplanning.export.PdfExporter;
 import rg.financialplanning.model.FinancialEntry;
 import rg.financialplanning.model.ItemType;
 import rg.financialplanning.model.Person;
+import rg.financialplanning.model.StateByYear;
 import rg.financialplanning.model.YearlySummary;
+import rg.financialplanning.model.FilingStatus;
 import rg.financialplanning.parser.FinancialDataProcessor;
+import rg.financialplanning.strategy.CompositeTaxOptimizationStrategy;
 import rg.financialplanning.ui.model.ObservableFinancialEntry;
 import rg.financialplanning.ui.model.ObservableItemTypeRate;
 import rg.financialplanning.ui.model.ObservablePerson;
+import rg.financialplanning.ui.model.ObservableStateByYear;
 import rg.financialplanning.ui.util.DataPersistence;
 
 import java.io.File;
@@ -43,11 +47,13 @@ public class MainController {
     private final ObservableList<ObservablePerson> persons = FXCollections.observableArrayList();
     private final ObservableList<ObservableFinancialEntry> entries = FXCollections.observableArrayList();
     private final ObservableList<ObservableItemTypeRate> rates = FXCollections.observableArrayList();
+    private final ObservableList<ObservableStateByYear> statesByYear = FXCollections.observableArrayList();
 
     // Tab controllers
     private PersonsTabController personsTabController;
     private EntriesTabController entriesTabController;
     private RatesTabController ratesTabController;
+    private StatesTabController statesTabController;
     private ResultsTabController resultsTabController;
     private SensitivityTabController sensitivityTabController;
     private RothComparisonTabController rothComparisonTabController;
@@ -108,22 +114,27 @@ public class MainController {
         Tab ratesTab = new Tab("Rates", ratesTabController.getRoot());
         ratesTab.setClosable(false);
 
+        // States Tab
+        statesTabController = new StatesTabController(statesByYear);
+        Tab statesTab = new Tab("States", statesTabController.getRoot());
+        statesTab.setClosable(false);
+
         // Results Tab
         resultsTabController = new ResultsTabController(primaryStage);
         Tab resultsTab = new Tab("Results", resultsTabController.getRoot());
         resultsTab.setClosable(false);
 
         // Sensitivity Analysis Tab
-        sensitivityTabController = new SensitivityTabController(persons, entries, rates);
+        sensitivityTabController = new SensitivityTabController(persons, entries, rates, statesByYear);
         Tab sensitivityTab = new Tab("Sensitivity", sensitivityTabController.getRoot());
         sensitivityTab.setClosable(false);
 
         // Roth Comparison Tab
-        rothComparisonTabController = new RothComparisonTabController(persons, entries, rates);
+        rothComparisonTabController = new RothComparisonTabController(persons, entries, rates, statesByYear);
         Tab rothComparisonTab = new Tab("Roth Comparison", rothComparisonTabController.getRoot());
         rothComparisonTab.setClosable(false);
 
-        tabPane.getTabs().addAll(personsTab, entriesTab, ratesTab, resultsTab, sensitivityTab, rothComparisonTab);
+        tabPane.getTabs().addAll(personsTab, entriesTab, ratesTab, statesTab, resultsTab, sensitivityTab, rothComparisonTab);
     }
 
     private void initializeBottomBar() {
@@ -205,9 +216,16 @@ public class MainController {
                                         ObservableItemTypeRate::getRate
                                 ));
 
+                        List<StateByYear> statesByYearList = statesByYear.stream()
+                                .map(ObservableStateByYear::toStateByYear)
+                                .collect(Collectors.toList());
+
                         // Process financial data
                         FinancialDataProcessor processor = new FinancialDataProcessor();
                         processor.setEntries(financialEntries);
+                        processor.setTaxOptimizationStrategy(
+                                new CompositeTaxOptimizationStrategy(FilingStatus.MARRIED_FILING_JOINTLY, statesByYearList)
+                        );
 
                         YearlySummary[] summaries = processor.generateYearlySummaries(percentageRates, personsByName);
 
@@ -278,7 +296,7 @@ public class MainController {
 
         if (fileToSave != null) {
             try {
-                DataPersistence.saveToFile(fileToSave, persons, entries, rates);
+                DataPersistence.saveToFile(fileToSave, persons, entries, rates, statesByYear);
                 currentFile = fileToSave;
                 statusLabel.setText("Saved: " + fileToSave.getName());
                 updateWindowTitle();
@@ -316,12 +334,12 @@ public class MainController {
         File file = fileChooser.showOpenDialog(primaryStage);
         if (file != null) {
             try {
-                DataPersistence.loadFromFile(file, persons, entries, rates);
+                DataPersistence.loadFromFile(file, persons, entries, rates, statesByYear);
                 currentFile = file;
                 statusLabel.setText("Loaded: " + file.getName());
                 updateWindowTitle();
 
-                // Refresh the rates table
+                // Refresh the tables
                 ratesTabController.getRoot().getScene().getWindow().sizeToScene();
 
             } catch (IOException ex) {

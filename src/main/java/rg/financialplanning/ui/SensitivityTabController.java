@@ -12,13 +12,17 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import rg.financialplanning.model.FinancialEntry;
+import rg.financialplanning.model.FilingStatus;
 import rg.financialplanning.model.ItemType;
 import rg.financialplanning.model.Person;
+import rg.financialplanning.model.StateByYear;
 import rg.financialplanning.model.YearlySummary;
 import rg.financialplanning.parser.FinancialDataProcessor;
+import rg.financialplanning.strategy.CompositeTaxOptimizationStrategy;
 import rg.financialplanning.ui.model.ObservableFinancialEntry;
 import rg.financialplanning.ui.model.ObservableItemTypeRate;
 import rg.financialplanning.ui.model.ObservablePerson;
+import rg.financialplanning.ui.model.ObservableStateByYear;
 
 import java.text.NumberFormat;
 import java.util.*;
@@ -34,6 +38,7 @@ public class SensitivityTabController {
     private final ObservableList<ObservablePerson> persons;
     private final ObservableList<ObservableFinancialEntry> entries;
     private final ObservableList<ObservableItemTypeRate> rates;
+    private final ObservableList<ObservableStateByYear> statesByYear;
 
     // Input controls
     private ComboBox<RateTypeOption> rateTypeComboBox;
@@ -62,10 +67,12 @@ public class SensitivityTabController {
 
     public SensitivityTabController(ObservableList<ObservablePerson> persons,
                                      ObservableList<ObservableFinancialEntry> entries,
-                                     ObservableList<ObservableItemTypeRate> rates) {
+                                     ObservableList<ObservableItemTypeRate> rates,
+                                     ObservableList<ObservableStateByYear> statesByYear) {
         this.persons = persons;
         this.entries = entries;
         this.rates = rates;
+        this.statesByYear = statesByYear;
         this.root = new VBox(15);
         this.currencyFormat = NumberFormat.getCurrencyInstance(Locale.US);
         this.currencyFormat.setMaximumFractionDigits(0);
@@ -335,7 +342,14 @@ public class SensitivityTabController {
             }
 
             // Generate summaries
+            List<StateByYear> statesByYearList = statesByYear.stream()
+                    .map(ObservableStateByYear::toStateByYear)
+                    .collect(Collectors.toList());
+
             processor.setEntries(financialEntries);
+            processor.setTaxOptimizationStrategy(
+                    new CompositeTaxOptimizationStrategy(FilingStatus.MARRIED_FILING_JOINTLY, statesByYearList)
+            );
             YearlySummary[] summaries = processor.generateYearlySummaries(testRates, personsByName);
 
             // Find first shortfall year

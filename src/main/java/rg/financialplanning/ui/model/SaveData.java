@@ -16,6 +16,7 @@ public class SaveData {
     private List<PersonData> persons = new ArrayList<>();
     private List<EntryData> entries = new ArrayList<>();
     private Map<String, Double> rates = new HashMap<>();
+    private List<StateByYearData> statesByYear = new ArrayList<>();
 
     public SaveData() {
     }
@@ -42,6 +43,14 @@ public class SaveData {
 
     public void setRates(Map<String, Double> rates) {
         this.rates = rates;
+    }
+
+    public List<StateByYearData> getStatesByYear() {
+        return statesByYear;
+    }
+
+    public void setStatesByYear(List<StateByYearData> statesByYear) {
+        this.statesByYear = statesByYear;
     }
 
     /**
@@ -130,6 +139,48 @@ public class SaveData {
 
         public void setValue(int value) {
             this.value = value;
+        }
+
+        public int getStartYear() {
+            return startYear;
+        }
+
+        public void setStartYear(int startYear) {
+            this.startYear = startYear;
+        }
+
+        public int getEndYear() {
+            return endYear;
+        }
+
+        public void setEndYear(int endYear) {
+            this.endYear = endYear;
+        }
+    }
+
+    /**
+     * Simple data class for state by year information.
+     */
+    public static class StateByYearData {
+        private String state;
+        private int startYear;
+        private int endYear;
+
+        public StateByYearData() {
+        }
+
+        public StateByYearData(String state, int startYear, int endYear) {
+            this.state = state;
+            this.startYear = startYear;
+            this.endYear = endYear;
+        }
+
+        public String getState() {
+            return state;
+        }
+
+        public void setState(String state) {
+            this.state = state;
         }
 
         public int getStartYear() {
