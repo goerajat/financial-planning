@@ -97,7 +97,7 @@ public class TaxCalculationStrategy implements TaxOptimizationStrategy {
 
         // State income tax (based on year-specific configuration)
         TaxCalculator stateTaxCalculator = StateTaxCalculatorFactory.getCalculatorForYear(summary.year(), statesByYear);
-        double stateIncomeTax = stateTaxCalculator.calculateTax(ordinaryIncome, filingStatus);
+        double stateIncomeTax = stateTaxCalculator.calculateTax(summary, filingStatus);
         summary.setStateIncomeTax(stateIncomeTax);
 
         // Social Security and Medicare taxes are based on earned income only

@@ -10,6 +10,7 @@ This application models long-term financial projections including:
 - Required Minimum Distribution (RMD) calculations
 - Tax-optimized withdrawal strategies
 - Roth conversion optimization
+- State-by-year tax configuration (NJ, NY, FL)
 - Sensitivity analysis for growth rate scenarios
 - Roth conversion strategy comparison
 - Multi-year financial summaries with PDF and CSV export
@@ -20,7 +21,8 @@ The application offers two user interfaces:
 
 ### Web Interface (Spring Boot + React)
 A modern web-based interface accessible through any browser. Features include:
-- Tabbed interface for managing Persons, Financial Entries, and Rates
+- Tabbed interface for managing Persons, Financial Entries, Rates, and States
+- State-by-year tax configuration (NJ, NY, FL)
 - Interactive results display with PDF generation
 - Sensitivity analysis tool
 - Roth conversion comparison tool
@@ -28,7 +30,8 @@ A modern web-based interface accessible through any browser. Features include:
 
 ### Desktop Interface (JavaFX)
 A native desktop application with:
-- Full-featured tabbed interface
+- Full-featured tabbed interface with States configuration
+- State-by-year tax configuration (NJ, NY, FL)
 - Embedded PDF viewer for generated plans
 - Native file dialogs for save/load operations
 - Sensitivity analysis and Roth comparison tabs
@@ -61,6 +64,9 @@ The application implements a composite strategy pattern with four optimization s
 
 - **Federal Tax Calculator** - Progressive tax brackets for all filing statuses
 - **NJ State Tax Calculator** - New Jersey state income tax brackets
+- **NY State Tax Calculator** - New York state income tax brackets
+- **FL State Tax Calculator** - Florida (0% state income tax)
+- **State Tax Calculator Factory** - Selects appropriate state calculator by year
 - **Social Security Tax Calculator** - FICA taxes with wage base limits
 - **Long-term Capital Gains Calculator** - Capital gains with configurable cost basis
 - **RMD Calculator** - IRS Uniform Lifetime Table calculations
@@ -94,6 +100,26 @@ For each strategy, view:
 - Cumulative taxes paid
 - Roth account balance
 
+### State-by-Year Tax Configuration
+
+Configure which state's tax rules apply for each year range in your financial plan:
+
+| State | Description |
+|-------|-------------|
+| NJ | New Jersey - Progressive state income tax (default) |
+| NY | New York - Progressive state income tax |
+| FL | Florida - No state income tax (0%) |
+
+Use cases:
+- **Retirement relocation**: Plan to move from NJ to FL in 2030? Configure NJ for 2024-2029 and FL for 2030+
+- **Tax optimization**: Compare total tax burden across different relocation scenarios
+- **Multi-state planning**: Model complex scenarios with multiple state transitions
+
+The state configuration affects:
+- State income tax calculations for each year
+- Sensitivity analysis projections
+- Roth conversion comparison results
+
 ## Project Structure
 
 ```
@@ -105,6 +131,9 @@ financial-planning/
 │   │   ├── calculator/                     # Tax calculators
 │   │   │   ├── FederalTaxCalculator.java
 │   │   │   ├── NJStateTaxCalculator.java
+│   │   │   ├── NYStateTaxCalculator.java
+│   │   │   ├── FloridaTaxCalculator.java
+│   │   │   ├── StateTaxCalculatorFactory.java
 │   │   │   ├── SocialSecurityTaxCalculator.java
 │   │   │   ├── LongTermCapitalGainsCalculator.java
 │   │   │   ├── RMDCalculator.java
@@ -116,7 +145,9 @@ financial-planning/
 │   │   │   ├── IndividualYearlySummary.java
 │   │   │   ├── ItemType.java
 │   │   │   ├── ItemTypePercentage.java
-│   │   │   └── FilingStatus.java
+│   │   │   ├── FilingStatus.java
+│   │   │   ├── State.java
+│   │   │   └── StateByYear.java
 │   │   ├── parser/                         # CSV parsers
 │   │   │   ├── FinancialDataProcessor.java
 │   │   │   ├── PersonParser.java
@@ -133,6 +164,7 @@ financial-planning/
 │   │   │   ├── PersonsTabController.java
 │   │   │   ├── EntriesTabController.java
 │   │   │   ├── RatesTabController.java
+│   │   │   ├── StatesTabController.java
 │   │   │   ├── ResultsTabController.java
 │   │   │   ├── SensitivityTabController.java
 │   │   │   └── RothComparisonTabController.java
@@ -152,6 +184,7 @@ financial-planning/
 │   │   │   ├── PersonsTab.tsx
 │   │   │   ├── EntriesTab.tsx
 │   │   │   ├── RatesTab.tsx
+│   │   │   ├── StatesTab.tsx
 │   │   │   ├── ResultsTab.tsx
 │   │   │   ├── SensitivityTab.tsx
 │   │   │   └── RothComparisonTab.tsx
@@ -329,7 +362,7 @@ The exported `FinancialPlanner-Out.csv` contains:
 | Total Non-Qualified Withdrawals | Combined non-qualified withdrawals |
 | {Name} Non-Qualified Withdrawals | Non-qualified withdrawals per person |
 | Total Federal Income Tax | Federal tax liability |
-| Total State Income Tax | NJ state tax liability |
+| Total State Income Tax | State tax liability (NJ, NY, or FL based on configuration) |
 | Total Capital Gains Tax | Capital gains tax on non-qualified withdrawals |
 | Total Social Security Tax | Social Security (FICA) tax |
 | Total Medicare Tax | Medicare tax |
