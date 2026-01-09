@@ -59,7 +59,7 @@ public class CompositeTaxOptimizationStrategyTest {
     @Test
     public void testConstructor_withCustomThreshold() {
         double customThreshold = 150000;
-        CompositeTaxOptimizationStrategy customStrategy = new CompositeTaxOptimizationStrategy(FilingStatus.SINGLE, customThreshold);
+        CompositeTaxOptimizationStrategy customStrategy = new CompositeTaxOptimizationStrategy(FilingStatus.SINGLE, java.util.List.of(), customThreshold);
 
         assertNotNull(customStrategy.getExpenseStrategy());
         assertEquals(customThreshold, customStrategy.getRothConversionStrategy().getTargetBracketThreshold(), 0.01);
