@@ -164,7 +164,7 @@ public class StateScenarioTabController {
         title.setStyle("-fx-font-weight: bold;");
 
         scenarioListView = new ListView<>(scenarios);
-        scenarioListView.setPrefHeight(150);
+        scenarioListView.setPrefHeight(220);
         scenarioListView.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(StateScenario item, boolean empty) {
