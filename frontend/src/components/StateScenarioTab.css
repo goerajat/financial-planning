@@ -1,0 +1,629 @@
+.state-scenario-tab {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.state-scenario-tab .tab-description {
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* Scenario Builder Section */
+.scenario-builder {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.scenario-builder h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 15px;
+}
+
+.scenarios-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.scenario-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  padding: 12px 16px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.scenario-item.editing {
+  border-color: #5c6bc0;
+  background: #f3f4fc;
+}
+
+.scenario-info {
+  flex: 1;
+}
+
+.scenario-info .scenario-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.scenario-info .scenario-description {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.scenario-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.scenario-actions button {
+  padding: 4px 12px;
+  font-size: 12px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.scenario-actions .edit-btn {
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #90caf9;
+}
+
+.scenario-actions .edit-btn:hover {
+  background: #bbdefb;
+}
+
+.scenario-actions .delete-btn {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+.scenario-actions .delete-btn:hover {
+  background: #ffcdd2;
+}
+
+.add-scenario-btn {
+  padding: 8px 16px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.add-scenario-btn:hover:not(:disabled) {
+  background: #c8e6c9;
+}
+
+.add-scenario-btn:disabled {
+  background: #f5f5f5;
+  color: #999;
+  border-color: #ddd;
+  cursor: not-allowed;
+}
+
+/* Scenario Editor */
+.scenario-editor {
+  background: white;
+  border: 1px solid #5c6bc0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 15px;
+}
+
+.scenario-editor h5 {
+  margin: 0 0 15px 0;
+  color: #333;
+}
+
+.editor-row {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  margin-bottom: 15px;
+}
+
+.editor-row .input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.editor-row .input-group label {
+  font-weight: 500;
+  color: #555;
+  font-size: 12px;
+}
+
+.editor-row .input-group input,
+.editor-row .input-group select {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.editor-row .input-group input:focus,
+.editor-row .input-group select:focus {
+  outline: none;
+  border-color: #5c6bc0;
+}
+
+.editor-row .input-group.name-group input {
+  width: 200px;
+}
+
+.state-ranges-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.state-ranges-section h6 {
+  margin: 0 0 10px 0;
+  color: #555;
+  font-size: 13px;
+}
+
+.state-range-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.state-range-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.state-range-item select,
+.state-range-item input {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.state-range-item select {
+  width: 100px;
+}
+
+.state-range-item input {
+  width: 80px;
+}
+
+.state-range-item .remove-range-btn {
+  padding: 4px 8px;
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.state-range-item .remove-range-btn:hover {
+  background: #ffcdd2;
+}
+
+.add-range-btn {
+  padding: 6px 12px;
+  background: #f5f5f5;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #666;
+}
+
+.add-range-btn:hover {
+  background: #eeeeee;
+  border-color: #999;
+}
+
+.editor-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.editor-buttons .save-btn {
+  padding: 8px 20px;
+  background: #5c6bc0;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.editor-buttons .save-btn:hover {
+  background: #3f51b5;
+}
+
+.editor-buttons .cancel-btn {
+  padding: 8px 20px;
+  background: white;
+  color: #666;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.editor-buttons .cancel-btn:hover {
+  background: #f5f5f5;
+}
+
+/* Comparison Controls */
+.comparison-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+  margin-bottom: 25px;
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.comparison-controls .input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.comparison-controls .input-group label {
+  font-weight: 500;
+  color: #555;
+  font-size: 13px;
+}
+
+.comparison-controls .input-group input,
+.comparison-controls .input-group select {
+  width: 120px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.comparison-controls .input-group.filing-status-group select {
+  width: 220px;
+}
+
+.run-comparison-btn {
+  padding: 10px 24px;
+  font-weight: 500;
+  background-color: #5c6bc0;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.run-comparison-btn:hover:not(:disabled) {
+  background-color: #3f51b5;
+}
+
+.run-comparison-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Results */
+.error-message {
+  background: #ffebee;
+  color: #c62828;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.comparison-results h3 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.table-container {
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-width: 800px;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  vertical-align: top;
+}
+
+.comparison-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.comparison-table .scenario-header,
+.comparison-table .scenario-cell {
+  text-align: left;
+  background: #fafafa;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 200px;
+}
+
+.comparison-table .year-header {
+  text-align: center;
+  min-width: 150px;
+}
+
+.comparison-table .year-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.comparison-table .year-offset {
+  font-size: 11px;
+  color: #888;
+  font-weight: normal;
+}
+
+.scenario-name-cell {
+  font-weight: 500;
+  color: #333;
+}
+
+.scenario-desc-cell {
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.comparison-table tbody tr:hover {
+  background: #f8f8f8;
+}
+
+.comparison-table tbody tr:hover .scenario-cell {
+  background: #f0f0f0;
+}
+
+.comparison-table .baseline-row {
+  background: #f5f5f5;
+}
+
+.comparison-table .baseline-row .scenario-cell {
+  background: #eeeeee;
+}
+
+.data-cell {
+  text-align: right;
+}
+
+.state-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+}
+
+.state-cell .net-worth {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.state-cell .delta {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.state-cell .delta.positive {
+  color: #2e7d32;
+}
+
+.state-cell .delta.negative {
+  color: #c62828;
+}
+
+.state-cell .delta.neutral {
+  color: #666;
+}
+
+.state-cell .tax-savings {
+  font-size: 11px;
+}
+
+.state-cell .tax-savings.positive {
+  color: #2e7d32;
+}
+
+.state-cell .tax-savings.negative {
+  color: #c62828;
+}
+
+.state-cell .tax-savings.neutral {
+  color: #666;
+}
+
+.state-cell .active-state {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.state-cell .active-state.state-nj {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.state-cell .active-state.state-ny {
+  background: #fce4ec;
+  color: #c2185b;
+}
+
+.state-cell .active-state.state-fl {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.shortfall-cell {
+  text-align: center !important;
+}
+
+.shortfall-cell .shortfall-label {
+  font-weight: 600;
+  color: #c62828;
+}
+
+.shortfall-cell .shortfall-year {
+  font-size: 11px;
+  color: #c62828;
+}
+
+.cell-positive {
+  background: #e8f5e9;
+}
+
+.cell-negative {
+  background: #fff3e0;
+}
+
+.cell-shortfall {
+  background: #ffebee;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 25px;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #555;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+.legend-color.baseline {
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+}
+
+.legend-color.positive {
+  background: #e8f5e9;
+  border: 1px solid #2e7d32;
+}
+
+.legend-color.negative {
+  background: #fff3e0;
+  border: 1px solid #e65100;
+}
+
+.legend-color.shortfall {
+  background: #ffebee;
+  border: 1px solid #c62828;
+}
+
+/* Notes */
+.comparison-notes {
+  background: #f5f5f5;
+  padding: 15px 20px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.comparison-notes h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 14px;
+}
+
+.comparison-notes ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.comparison-notes li {
+  margin-bottom: 6px;
+  color: #555;
+}
+
+.comparison-notes li strong {
+  color: #333;
+}
+
+.empty-message {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+  font-size: 14px;
+}
+
+.min-scenarios-message {
+  color: #666;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.clickable-cell {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.clickable-cell:hover {
+  filter: brightness(0.95);
+}
+
+.pdf-loading-message {
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}

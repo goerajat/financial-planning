@@ -11,6 +11,9 @@ import rg.financialplanning.web.dto.SensitivityAnalysisRequestDTO;
 import rg.financialplanning.web.dto.SensitivityAnalysisResponseDTO;
 import rg.financialplanning.web.dto.RothComparisonRequestDTO;
 import rg.financialplanning.web.dto.RothComparisonResponseDTO;
+import rg.financialplanning.web.dto.StateScenarioRequestDTO;
+import rg.financialplanning.web.dto.StateScenarioResponseDTO;
+import rg.financialplanning.web.dto.ScenarioPdfRequestDTO;
 import rg.financialplanning.web.service.FinancialPlanService;
 
 import java.io.IOException;
@@ -101,6 +104,37 @@ public class PlanController {
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/state-scenario")
+    public ResponseEntity<StateScenarioResponseDTO> runStateScenarioAnalysis(
+            @RequestBody StateScenarioRequestDTO request) {
+        try {
+            StateScenarioResponseDTO response = planService.runStateScenarioAnalysis(request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/generate-scenario")
+    public ResponseEntity<byte[]> generateScenarioPdf(@RequestBody ScenarioPdfRequestDTO request) {
+        try {
+            byte[] pdfBytes = planService.generateScenarioPdf(request);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            String filename = request.getScenarioName() != null
+                    ? "financial_plan_" + request.getScenarioName().replaceAll("[^a-zA-Z0-9]", "_") + ".pdf"
+                    : "financial_plan_scenario.pdf";
+            headers.setContentDispositionFormData("attachment", filename);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(pdfBytes);
+        } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
         }
     }

@@ -23,7 +23,13 @@ import rg.financialplanning.web.dto.RothComparisonRequestDTO;
 import rg.financialplanning.web.dto.RothComparisonResponseDTO;
 import rg.financialplanning.web.dto.RothComparisonRowDTO;
 import rg.financialplanning.web.dto.RothComparisonCellDTO;
+import rg.financialplanning.web.dto.StateScenarioRequestDTO;
+import rg.financialplanning.web.dto.StateScenarioResponseDTO;
+import rg.financialplanning.web.dto.StateScenarioRowDTO;
+import rg.financialplanning.web.dto.StateScenarioCellDTO;
+import rg.financialplanning.web.dto.StateScenarioDTO;
 import rg.financialplanning.model.FilingStatus;
+import rg.financialplanning.calculator.StateTaxCalculatorFactory;
 import rg.financialplanning.model.State;
 import rg.financialplanning.model.StateByYear;
 import rg.financialplanning.strategy.CompositeTaxOptimizationStrategy;
@@ -33,6 +39,7 @@ import rg.financialplanning.strategy.ExpenseManagementStrategy;
 import rg.financialplanning.strategy.RothConversionOptimizationStrategy;
 import rg.financialplanning.strategy.TaxCalculationStrategy;
 import rg.financialplanning.web.dto.StateByYearDTO;
+import rg.financialplanning.web.dto.ScenarioPdfRequestDTO;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -100,6 +107,120 @@ public class FinancialPlanService {
             return Files.readAllBytes(tempFile);
         } finally {
             Files.deleteIfExists(tempFile);
+        }
+    }
+
+    /**
+     * Generates a PDF for a specific scenario with custom parameters.
+     * Supports:
+     * - Roth conversion threshold override
+     * - Rate type/value override for sensitivity analysis
+     * - State configuration override for state scenarios
+     */
+    public byte[] generateScenarioPdf(ScenarioPdfRequestDTO request) throws IOException {
+        FinancialPlanDTO planData = request.getPlanData();
+
+        // Convert DTOs to domain models
+        List<FinancialEntry> entries = planData.getEntries().stream()
+                .map(FinancialEntryDTO::toEntry)
+                .collect(Collectors.toList());
+
+        List<Person> persons = planData.getPersons().stream()
+                .map(PersonDTO::toPerson)
+                .collect(Collectors.toList());
+
+        Map<String, Person> personsByName = persons.stream()
+                .collect(Collectors.toMap(Person::name, p -> p, (a, b) -> a));
+
+        Map<ItemType, Double> rates = convertRates(planData.getRates());
+
+        // Apply rate overrides for sensitivity analysis scenarios
+        if (request.getRateType() != null && request.getRateValue() != null) {
+            applyRateOverride(rates, request.getRateType(), request.getRateValue());
+        }
+
+        // Parse filing status
+        FilingStatus filingStatus;
+        try {
+            filingStatus = FilingStatus.valueOf(request.getFilingStatus());
+        } catch (IllegalArgumentException e) {
+            filingStatus = FilingStatus.MARRIED_FILING_JOINTLY;
+        }
+
+        // Determine state configuration - use scenario override if provided
+        List<StateByYear> statesByYear;
+        if (request.getScenarioStatesByYear() != null && !request.getScenarioStatesByYear().isEmpty()) {
+            statesByYear = convertStatesByYear(request.getScenarioStatesByYear());
+        } else {
+            statesByYear = convertStatesByYear(planData.getStatesByYear());
+        }
+
+        // Create the appropriate tax optimization strategy
+        FinancialDataProcessor processor = new FinancialDataProcessor();
+        processor.setEntries(entries);
+
+        if (request.getRothConversionThreshold() != null) {
+            // Roth comparison scenario with specific threshold
+            if (request.getRothConversionThreshold() <= 0) {
+                // No conversion scenario
+                processor.setTaxOptimizationStrategy(
+                        new CompositeTaxOptimizationStrategy(
+                                new RMDOptimizationStrategy(),
+                                new ExpenseManagementStrategy(),
+                                new NoOpRothConversionStrategy(filingStatus),
+                                new TaxCalculationStrategy(filingStatus, statesByYear)
+                        )
+                );
+            } else {
+                // Specific bracket threshold
+                processor.setTaxOptimizationStrategy(
+                        new CompositeTaxOptimizationStrategy(filingStatus, statesByYear, request.getRothConversionThreshold())
+                );
+            }
+        } else {
+            // Default strategy with state configuration
+            processor.setTaxOptimizationStrategy(
+                    new CompositeTaxOptimizationStrategy(filingStatus, statesByYear)
+            );
+        }
+
+        YearlySummary[] summaries = processor.generateYearlySummaries(rates, personsByName);
+
+        // Generate PDF to temp file, then read bytes
+        Path tempFile = Files.createTempFile("financial_plan_scenario_", ".pdf");
+        try {
+            FinancialPlanInputs inputs = new FinancialPlanInputs(entries, persons, rates);
+            PdfExporter exporter = new PdfExporter();
+            exporter.exportYearlySummariesToPdf(summaries, inputs, tempFile.toString());
+            return Files.readAllBytes(tempFile);
+        } finally {
+            Files.deleteIfExists(tempFile);
+        }
+    }
+
+    private void applyRateOverride(Map<ItemType, Double> rates, String rateType, double rateValue) {
+        List<ItemType> targetItemTypes;
+        switch (rateType.toUpperCase()) {
+            case "ALL_ASSETS":
+                targetItemTypes = List.of(ItemType.QUALIFIED, ItemType.NON_QUALIFIED, ItemType.ROTH);
+                break;
+            case "QUALIFIED":
+                targetItemTypes = List.of(ItemType.QUALIFIED);
+                break;
+            case "NON_QUALIFIED":
+                targetItemTypes = List.of(ItemType.NON_QUALIFIED);
+                break;
+            case "ROTH":
+                targetItemTypes = List.of(ItemType.ROTH);
+                break;
+            case "EXPENSE":
+            default:
+                targetItemTypes = List.of(ItemType.EXPENSE);
+                break;
+        }
+
+        for (ItemType targetType : targetItemTypes) {
+            rates.put(targetType, rateValue);
         }
     }
 
@@ -490,5 +611,185 @@ public class FinancialPlanService {
         }
 
         return new RothComparisonRowDTO(scenarioName, bracketThreshold, cells);
+    }
+
+    public StateScenarioResponseDTO runStateScenarioAnalysis(StateScenarioRequestDTO request) {
+        FinancialPlanDTO planData = request.getPlanData();
+        List<StateScenarioDTO> scenarios = request.getScenarios();
+        int yearIncrement = request.getYearIncrement();
+
+        // Validate request
+        if (scenarios == null || scenarios.size() < 2) {
+            throw new IllegalArgumentException("At least 2 scenarios are required for comparison");
+        }
+        if (scenarios.size() > 5) {
+            throw new IllegalArgumentException("Maximum 5 scenarios are allowed");
+        }
+
+        // Parse filing status
+        FilingStatus filingStatus;
+        try {
+            filingStatus = FilingStatus.valueOf(request.getFilingStatus());
+        } catch (IllegalArgumentException e) {
+            filingStatus = FilingStatus.MARRIED_FILING_JOINTLY;
+        }
+
+        // Convert DTOs to domain models
+        List<FinancialEntry> entries = planData.getEntries().stream()
+                .map(FinancialEntryDTO::toEntry)
+                .collect(Collectors.toList());
+
+        List<Person> persons = planData.getPersons().stream()
+                .map(PersonDTO::toPerson)
+                .collect(Collectors.toList());
+
+        Map<String, Person> personsByName = persons.stream()
+                .collect(Collectors.toMap(Person::name, p -> p, (a, b) -> a));
+
+        Map<ItemType, Double> rates = convertRates(planData.getRates());
+
+        // Setup processor to find year range
+        FinancialDataProcessor processor = new FinancialDataProcessor();
+        processor.setEntries(entries);
+
+        int firstDataYear = processor.getEarliestStartYear();
+        int lastDataYear = processor.getLatestEndYear();
+
+        // Calculate milestone years
+        List<Integer> milestoneYears = new ArrayList<>();
+        for (int year = firstDataYear + yearIncrement; year <= lastDataYear; year += yearIncrement) {
+            milestoneYears.add(year);
+        }
+        if (milestoneYears.isEmpty() || milestoneYears.get(milestoneYears.size() - 1) != lastDataYear) {
+            milestoneYears.add(lastDataYear);
+        }
+
+        // Generate baseline summaries from first scenario
+        StateScenarioDTO baselineScenario = scenarios.get(0);
+        List<StateByYear> baselineStatesByYear = convertStatesByYear(baselineScenario.getStatesByYear());
+
+        FinancialDataProcessor baselineProcessor = new FinancialDataProcessor();
+        baselineProcessor.setEntries(entries);
+        baselineProcessor.setTaxOptimizationStrategy(
+                new CompositeTaxOptimizationStrategy(filingStatus, baselineStatesByYear)
+        );
+        YearlySummary[] baselineSummaries = baselineProcessor.generateYearlySummaries(rates, personsByName);
+
+        // Build rows for each scenario
+        List<StateScenarioRowDTO> rows = new ArrayList<>();
+
+        for (int i = 0; i < scenarios.size(); i++) {
+            StateScenarioDTO scenario = scenarios.get(i);
+            List<StateByYear> scenarioStatesByYear = convertStatesByYear(scenario.getStatesByYear());
+
+            rows.add(buildStateScenarioRow(
+                    scenario.getName(),
+                    scenarioStatesByYear,
+                    entries,
+                    rates,
+                    personsByName,
+                    filingStatus,
+                    milestoneYears,
+                    firstDataYear,
+                    baselineSummaries,
+                    i == 0 ? baselineSummaries : null  // Use precomputed for baseline
+            ));
+        }
+
+        StateScenarioResponseDTO response = new StateScenarioResponseDTO();
+        response.setFirstDataYear(firstDataYear);
+        response.setMilestoneYears(milestoneYears);
+        response.setRows(rows);
+        return response;
+    }
+
+    private StateScenarioRowDTO buildStateScenarioRow(
+            String scenarioName,
+            List<StateByYear> statesByYear,
+            List<FinancialEntry> entries,
+            Map<ItemType, Double> rates,
+            Map<String, Person> personsByName,
+            FilingStatus filingStatus,
+            List<Integer> milestoneYears,
+            int firstDataYear,
+            YearlySummary[] baselineSummaries,
+            YearlySummary[] precomputedSummaries) {
+
+        YearlySummary[] summaries;
+        if (precomputedSummaries != null) {
+            summaries = precomputedSummaries;
+        } else {
+            FinancialDataProcessor processor = new FinancialDataProcessor();
+            processor.setEntries(entries);
+            processor.setTaxOptimizationStrategy(
+                    new CompositeTaxOptimizationStrategy(filingStatus, statesByYear)
+            );
+            summaries = processor.generateYearlySummaries(rates, personsByName);
+        }
+
+        // Track first shortfall year
+        Integer firstShortfallYear = null;
+        for (YearlySummary summary : summaries) {
+            if (summary.deficit() > 0) {
+                firstShortfallYear = summary.year();
+                break;
+            }
+        }
+
+        // Build cells for each milestone
+        List<StateScenarioCellDTO> cells = new ArrayList<>();
+        for (int milestoneYear : milestoneYears) {
+            int index = milestoneYear - firstDataYear;
+            if (index >= 0 && index < summaries.length) {
+                YearlySummary summary = summaries[index];
+                YearlySummary baseline = baselineSummaries[index];
+
+                // Calculate cumulative taxes (federal + state)
+                double cumulativeTaxes = 0;
+                double cumulativeStateTaxes = 0;
+                double baselineCumulativeStateTaxes = 0;
+                for (int i = 0; i <= index; i++) {
+                    cumulativeTaxes += summaries[i].federalIncomeTax() + summaries[i].stateIncomeTax();
+                    cumulativeStateTaxes += summaries[i].stateIncomeTax();
+                    baselineCumulativeStateTaxes += baselineSummaries[i].stateIncomeTax();
+                }
+
+                // State tax savings = baseline state taxes - this scenario's state taxes
+                double stateTaxSavings = baselineCumulativeStateTaxes - cumulativeStateTaxes;
+
+                // Get active state for this year
+                State state = StateTaxCalculatorFactory.getStateForYear(milestoneYear, statesByYear);
+                String activeState = state.getDisplayName();
+
+                boolean hasShortfall = firstShortfallYear != null && firstShortfallYear <= milestoneYear;
+
+                cells.add(new StateScenarioCellDTO(
+                        milestoneYear,
+                        summary.netWorth(),
+                        summary.netWorth() - baseline.netWorth(),
+                        cumulativeTaxes,
+                        cumulativeStateTaxes,
+                        stateTaxSavings,
+                        activeState,
+                        hasShortfall,
+                        hasShortfall ? firstShortfallYear : null
+                ));
+            }
+        }
+
+        // Generate scenario description from states
+        String description = generateStateScenarioDescription(statesByYear);
+
+        return new StateScenarioRowDTO(scenarioName, description, cells);
+    }
+
+    private String generateStateScenarioDescription(List<StateByYear> statesByYear) {
+        if (statesByYear == null || statesByYear.isEmpty()) {
+            return "NJ (default)";
+        }
+
+        return statesByYear.stream()
+                .map(sby -> sby.state().name() + " " + sby.startYear() + "-" + sby.endYear())
+                .collect(Collectors.joining(", "));
     }
 }

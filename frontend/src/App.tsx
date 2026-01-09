@@ -7,9 +7,10 @@ import StatesTab from './components/StatesTab';
 import ResultsTab from './components/ResultsTab';
 import SensitivityTab from './components/SensitivityTab';
 import RothComparisonTab from './components/RothComparisonTab';
+import StateScenarioTab from './components/StateScenarioTab';
 import './App.css';
 
-type TabName = 'persons' | 'entries' | 'rates' | 'states' | 'results' | 'sensitivity' | 'roth-comparison';
+type TabName = 'persons' | 'entries' | 'rates' | 'states' | 'results' | 'sensitivity' | 'roth-comparison' | 'state-scenario';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabName>('persons');
@@ -36,6 +37,7 @@ const AppContent: React.FC = () => {
     { id: 'results', label: 'Results' },
     { id: 'sensitivity', label: 'Sensitivity' },
     { id: 'roth-comparison', label: 'Roth Comparison' },
+    { id: 'state-scenario', label: 'State Scenarios' },
   ];
 
   return (
@@ -82,6 +84,7 @@ const AppContent: React.FC = () => {
         {activeTab === 'results' && <ResultsTab />}
         {activeTab === 'sensitivity' && <SensitivityTab />}
         {activeTab === 'roth-comparison' && <RothComparisonTab />}
+        {activeTab === 'state-scenario' && <StateScenarioTab />}
       </main>
     </div>
   );

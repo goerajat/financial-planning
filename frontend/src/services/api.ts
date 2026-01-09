@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FinancialPlan, RateConfig, SensitivityAnalysisRequest, SensitivityAnalysisResponse, RothComparisonRequest, RothComparisonResponse } from '../types';
+import { FinancialPlan, RateConfig, SensitivityAnalysisRequest, SensitivityAnalysisResponse, RothComparisonRequest, RothComparisonResponse, StateScenarioRequest, StateScenarioResponse, ScenarioPdfRequest } from '../types';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
 
@@ -51,6 +51,18 @@ export const planApi = {
 
   runRothComparison: async (request: RothComparisonRequest): Promise<RothComparisonResponse> => {
     const response = await api.post('/plan/roth-comparison', request);
+    return response.data;
+  },
+
+  runStateScenarioAnalysis: async (request: StateScenarioRequest): Promise<StateScenarioResponse> => {
+    const response = await api.post('/plan/state-scenario', request);
+    return response.data;
+  },
+
+  generateScenarioPdf: async (request: ScenarioPdfRequest): Promise<Blob> => {
+    const response = await api.post('/plan/generate-scenario', request, {
+      responseType: 'blob',
+    });
     return response.data;
   },
 };

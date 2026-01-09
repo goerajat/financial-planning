@@ -192,3 +192,21 @@
   color: #888;
   font-size: 14px;
 }
+
+.clickable-cell {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.clickable-cell:hover {
+  filter: brightness(0.95);
+}
+
+.pdf-loading-message {
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}

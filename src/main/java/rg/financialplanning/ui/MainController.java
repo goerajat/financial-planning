@@ -57,6 +57,7 @@ public class MainController {
     private ResultsTabController resultsTabController;
     private SensitivityTabController sensitivityTabController;
     private RothComparisonTabController rothComparisonTabController;
+    private StateScenarioTabController stateScenarioTabController;
 
     // Status
     private Label statusLabel;
@@ -134,7 +135,12 @@ public class MainController {
         Tab rothComparisonTab = new Tab("Roth Comparison", rothComparisonTabController.getRoot());
         rothComparisonTab.setClosable(false);
 
-        tabPane.getTabs().addAll(personsTab, entriesTab, ratesTab, statesTab, resultsTab, sensitivityTab, rothComparisonTab);
+        // State Scenario Tab
+        stateScenarioTabController = new StateScenarioTabController(persons, entries, rates, statesByYear);
+        Tab stateScenarioTab = new Tab("State Scenarios", stateScenarioTabController.getRoot());
+        stateScenarioTab.setClosable(false);
+
+        tabPane.getTabs().addAll(personsTab, entriesTab, ratesTab, statesTab, resultsTab, sensitivityTab, rothComparisonTab, stateScenarioTab);
     }
 
     private void initializeBottomBar() {

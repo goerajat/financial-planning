@@ -10,7 +10,10 @@ import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
+import rg.financialplanning.export.FinancialPlanInputs;
+import rg.financialplanning.export.PdfExporter;
 import rg.financialplanning.model.FinancialEntry;
 import rg.financialplanning.model.FilingStatus;
 import rg.financialplanning.model.ItemType;
@@ -24,6 +27,9 @@ import rg.financialplanning.ui.model.ObservableItemTypeRate;
 import rg.financialplanning.ui.model.ObservablePerson;
 import rg.financialplanning.ui.model.ObservableStateByYear;
 
+import java.awt.Desktop;
+import java.io.File;
+import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,6 +59,10 @@ public class SensitivityTabController {
     // Results table
     private TableView<SensitivityRow> resultsTable;
     private Label resultsHeaderLabel;
+
+    // PDF generation status
+    private Label pdfStatusLabel;
+    private boolean isPdfGenerating = false;
 
     // Rate type options
     private static final List<RateTypeOption> RATE_TYPE_OPTIONS = List.of(
@@ -90,13 +100,20 @@ public class SensitivityTabController {
         Label descriptionLabel = new Label(
             "Analyze how different growth rates affect your net worth over time. " +
             "Select a rate type, set the range, and see projected net worth at milestone years. " +
-            "\"Shortfall\" indicates a deficit occurred before that milestone."
+            "\"Shortfall\" indicates a deficit occurred before that milestone. " +
+            "Click any row to generate a PDF for that rate scenario."
         );
         descriptionLabel.setStyle("-fx-text-fill: #666;");
         descriptionLabel.setWrapText(true);
 
         // Input controls
         GridPane inputGrid = createInputGrid();
+
+        // PDF status label
+        pdfStatusLabel = new Label("");
+        pdfStatusLabel.setStyle("-fx-text-fill: #1565c0; -fx-background-color: #e3f2fd; -fx-padding: 8 12; -fx-background-radius: 4;");
+        pdfStatusLabel.setVisible(false);
+        pdfStatusLabel.setManaged(false);
 
         // Results section
         resultsHeaderLabel = new Label("Results");
@@ -108,10 +125,23 @@ public class SensitivityTabController {
         resultsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         VBox.setVgrow(resultsTable, Priority.ALWAYS);
 
+        // Add row click handler for PDF generation
+        resultsTable.setRowFactory(tv -> {
+            TableRow<SensitivityRow> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (!row.isEmpty() && event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 1) {
+                    SensitivityRow clickedRow = row.getItem();
+                    generatePdfForScenario(clickedRow);
+                }
+            });
+            row.setStyle("-fx-cursor: hand;");
+            return row;
+        });
+
         // Legend
         HBox legend = createLegend();
 
-        root.getChildren().addAll(headerLabel, descriptionLabel, inputGrid,
+        root.getChildren().addAll(headerLabel, descriptionLabel, inputGrid, pdfStatusLabel,
                                    resultsHeaderLabel, resultsTable, legend);
     }
 
@@ -435,6 +465,119 @@ public class SensitivityTabController {
         }
 
         resultsTable.setItems(FXCollections.observableArrayList(result.rows));
+    }
+
+    private void generatePdfForScenario(SensitivityRow scenarioRow) {
+        if (isPdfGenerating) {
+            return;
+        }
+
+        isPdfGenerating = true;
+        RateTypeOption selectedRateType = rateTypeComboBox.getValue();
+        String scenarioName = selectedRateType.label + " " + String.format("%.2f%%", scenarioRow.rate);
+        pdfStatusLabel.setText("Generating PDF for \"" + scenarioName + "\"...");
+        pdfStatusLabel.setVisible(true);
+        pdfStatusLabel.setManaged(true);
+
+        double rateValue = scenarioRow.rate;
+
+        Service<File> pdfService = new Service<>() {
+            @Override
+            protected Task<File> createTask() {
+                return new Task<>() {
+                    @Override
+                    protected File call() throws Exception {
+                        // Convert observable data to domain models
+                        List<FinancialEntry> financialEntries = entries.stream()
+                                .map(ObservableFinancialEntry::toFinancialEntry)
+                                .collect(Collectors.toList());
+
+                        List<Person> personList = persons.stream()
+                                .map(ObservablePerson::toPerson)
+                                .collect(Collectors.toList());
+
+                        Map<String, Person> personsByName = personList.stream()
+                                .collect(Collectors.toMap(Person::name, p -> p, (a, b) -> a));
+
+                        Map<ItemType, Double> percentageRates = new HashMap<>(rates.stream()
+                                .collect(Collectors.toMap(
+                                        ObservableItemTypeRate::getItemType,
+                                        ObservableItemTypeRate::getRate
+                                )));
+
+                        // Override rate based on rate type
+                        List<ItemType> targetItemTypes = switch (selectedRateType.value) {
+                            case "ALL_ASSETS" -> List.of(ItemType.QUALIFIED, ItemType.NON_QUALIFIED, ItemType.ROTH);
+                            case "QUALIFIED" -> List.of(ItemType.QUALIFIED);
+                            case "NON_QUALIFIED" -> List.of(ItemType.NON_QUALIFIED);
+                            case "ROTH" -> List.of(ItemType.ROTH);
+                            default -> List.of(ItemType.EXPENSE);
+                        };
+
+                        for (ItemType targetType : targetItemTypes) {
+                            percentageRates.put(targetType, rateValue);
+                        }
+
+                        List<StateByYear> statesByYearList = statesByYear.stream()
+                                .map(ObservableStateByYear::toStateByYear)
+                                .collect(Collectors.toList());
+
+                        // Process financial data
+                        FinancialDataProcessor processor = new FinancialDataProcessor();
+                        processor.setEntries(financialEntries);
+                        processor.setTaxOptimizationStrategy(
+                                new CompositeTaxOptimizationStrategy(FilingStatus.MARRIED_FILING_JOINTLY, statesByYearList)
+                        );
+
+                        YearlySummary[] summaries = processor.generateYearlySummaries(percentageRates, personsByName);
+
+                        // Generate PDF
+                        String safeScenarioName = scenarioName.replaceAll("[^a-zA-Z0-9]", "_");
+                        File tempPdf = File.createTempFile("financial_plan_" + safeScenarioName + "_", ".pdf");
+                        tempPdf.deleteOnExit();
+
+                        FinancialPlanInputs inputs = new FinancialPlanInputs(
+                                financialEntries,
+                                personList,
+                                percentageRates
+                        );
+
+                        PdfExporter exporter = new PdfExporter();
+                        exporter.exportYearlySummariesToPdf(summaries, inputs, tempPdf.getAbsolutePath());
+
+                        return tempPdf;
+                    }
+                };
+            }
+        };
+
+        pdfService.setOnSucceeded(e -> {
+            isPdfGenerating = false;
+            pdfStatusLabel.setVisible(false);
+            pdfStatusLabel.setManaged(false);
+
+            File pdfFile = pdfService.getValue();
+            try {
+                if (Desktop.isDesktopSupported()) {
+                    Desktop.getDesktop().open(pdfFile);
+                } else {
+                    showAlert("PDF Generated", "PDF saved to: " + pdfFile.getAbsolutePath());
+                }
+            } catch (IOException ex) {
+                showAlert("Error", "Failed to open PDF: " + ex.getMessage());
+            }
+        });
+
+        pdfService.setOnFailed(e -> {
+            isPdfGenerating = false;
+            pdfStatusLabel.setVisible(false);
+            pdfStatusLabel.setManaged(false);
+            Throwable ex = pdfService.getException();
+            showAlert("PDF Generation Failed", "Failed to generate PDF:\n" + ex.getMessage());
+            ex.printStackTrace();
+        });
+
+        pdfService.start();
     }
 
     private void showAlert(String title, String message) {

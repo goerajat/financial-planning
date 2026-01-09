@@ -178,11 +178,12 @@ public class CompositeTaxOptimizationStrategy implements TaxOptimizationStrategy
 
             // Apply expense management to handle surplus/deficit
             expenseStrategy.optimize(previousYearlySummary, currentYearlySummary);
+            // Go to next iteration so taxes on any subsequent withdrawals are calculated
 
             // Check again after expense management
-            if (hasDeficit(currentYearlySummary) || isCashFlowBalanced(currentYearlySummary)) {
-                break;
-            }
+            //if (hasDeficit(currentYearlySummary) || isCashFlowBalanced(currentYearlySummary)) {
+            //    break;
+            //}
         }
     }
 

@@ -6,7 +6,9 @@ import {
   SensitivityRow,
   SensitivityCell,
   SensitivityRateType,
-  SENSITIVITY_RATE_TYPES
+  SENSITIVITY_RATE_TYPES,
+  FilingStatus,
+  FILING_STATUSES,
 } from '../types';
 import './Tab.css';
 import './SensitivityTab.css';
@@ -19,9 +21,11 @@ const SensitivityTab: React.FC = () => {
   const [maxRate, setMaxRate] = useState<number>(5.0);
   const [rateIncrement, setRateIncrement] = useState<number>(0.25);
   const [yearIncrement, setYearIncrement] = useState<number>(5);
+  const [filingStatus, setFilingStatus] = useState<FilingStatus>('MARRIED_FILING_JOINTLY');
 
   const [analysisResult, setAnalysisResult] = useState<SensitivityAnalysisResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleRateTypeChange = (newRateType: SensitivityRateType) => {
@@ -76,6 +80,46 @@ const SensitivityTab: React.FC = () => {
     }).format(value);
   };
 
+  const handleCellClick = async (row: SensitivityRow) => {
+    if (pdfLoading) return;
+
+    const scenarioName = `${rateType} ${row.rate.toFixed(2)}%`;
+    setPdfLoading(scenarioName);
+    setError(null);
+
+    try {
+      const planData = {
+        persons,
+        entries,
+        rates,
+        statesByYear,
+      };
+
+      const pdfBlob = await planApi.generateScenarioPdf({
+        planData,
+        filingStatus,
+        rateType,
+        rateValue: row.rate,
+        scenarioName,
+      });
+
+      // Download the PDF
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `financial_plan_${scenarioName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('Failed to generate PDF for this scenario. Please try again.');
+      console.error(err);
+    } finally {
+      setPdfLoading(null);
+    }
+  };
+
   const renderCell = (cell: SensitivityCell): React.ReactNode => {
     if (cell.hasShortfall) {
       return (
@@ -102,6 +146,7 @@ const SensitivityTab: React.FC = () => {
         Analyze how different growth rates affect your net worth over time.
         Select a rate type, set the range, and see the projected net worth at milestone years.
         "Shortfall" indicates a deficit occurred before that milestone.
+        <strong> Click any row to generate a PDF for that scenario.</strong>
       </p>
 
       <div className="sensitivity-inputs">
@@ -170,6 +215,21 @@ const SensitivityTab: React.FC = () => {
           />
         </div>
 
+        <div className="input-group filing-status-group">
+          <label htmlFor="filingStatus">Filing Status</label>
+          <select
+            id="filingStatus"
+            value={filingStatus}
+            onChange={(e) => setFilingStatus(e.target.value as FilingStatus)}
+          >
+            {FILING_STATUSES.map((status) => (
+              <option key={status.value} value={status.value}>
+                {status.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <button
           onClick={runAnalysis}
           disabled={isLoading}
@@ -180,6 +240,12 @@ const SensitivityTab: React.FC = () => {
       </div>
 
       {error && <div className="error-message">{error}</div>}
+
+      {pdfLoading && (
+        <div className="pdf-loading-message">
+          Generating PDF for "{pdfLoading}"...
+        </div>
+      )}
 
       {analysisResult && (
         <div className="sensitivity-results">
@@ -202,9 +268,20 @@ const SensitivityTab: React.FC = () => {
               <tbody>
                 {analysisResult.rows.map((row: SensitivityRow) => (
                   <tr key={row.rate}>
-                    <td className="rate-cell">{row.rate.toFixed(2)}%</td>
+                    <td
+                      className="rate-cell clickable-cell"
+                      onClick={() => handleCellClick(row)}
+                      title="Click to generate PDF for this rate scenario"
+                    >
+                      {row.rate.toFixed(2)}%
+                    </td>
                     {row.cells.map((cell: SensitivityCell) => (
-                      <td key={cell.year} className={getCellClass(cell)}>
+                      <td
+                        key={cell.year}
+                        className={`${getCellClass(cell)} clickable-cell`}
+                        onClick={() => handleCellClick(row)}
+                        title="Click to generate PDF for this rate scenario"
+                      >
                         {renderCell(cell)}
                       </td>
                     ))}

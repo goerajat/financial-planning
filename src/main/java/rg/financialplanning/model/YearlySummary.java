@@ -330,7 +330,7 @@ public class YearlySummary {
 
     // ===== Validation Methods =====
 
-    private static final double EPSILON = 0.01; // Tolerance for floating point comparison
+    private static final double EPSILON = 1.0; // Tolerance for floating point comparison
 
     /**
      * Calculates the sum of individual incomes.

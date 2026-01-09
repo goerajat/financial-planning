@@ -138,3 +138,51 @@ export interface RothComparisonResponse {
   milestoneYears: number[];
   rows: RothComparisonRow[];
 }
+
+// State Scenario Analysis Types
+export interface StateScenario {
+  name: string;
+  statesByYear: StateByYear[];
+}
+
+export interface StateScenarioRequest {
+  planData: FinancialPlan;
+  scenarios: StateScenario[];
+  yearIncrement?: number;
+  filingStatus?: FilingStatus;
+}
+
+export interface StateScenarioCell {
+  year: number;
+  netWorth: number;
+  netWorthDelta: number;
+  cumulativeTaxes: number;
+  cumulativeStateTaxes: number;
+  stateTaxSavings: number;
+  activeState: string;
+  hasShortfall: boolean;
+  shortfallYear: number | null;
+}
+
+export interface StateScenarioRow {
+  scenarioName: string;
+  scenarioDescription: string;
+  cells: StateScenarioCell[];
+}
+
+export interface StateScenarioResponse {
+  firstDataYear: number;
+  milestoneYears: number[];
+  rows: StateScenarioRow[];
+}
+
+// Scenario PDF Generation Request
+export interface ScenarioPdfRequest {
+  planData: FinancialPlan;
+  filingStatus?: FilingStatus;
+  rothConversionThreshold?: number;
+  rateType?: string;
+  rateValue?: number;
+  scenarioStatesByYear?: StateByYear[];
+  scenarioName?: string;
+}

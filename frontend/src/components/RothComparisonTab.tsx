@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { usePlan } from '../context/PlanContext';
 import { planApi } from '../services/api';
-import { RothComparisonResponse, RothComparisonCell, FilingStatus, FILING_STATUSES } from '../types';
+import { RothComparisonResponse, RothComparisonCell, RothComparisonRow, FilingStatus, FILING_STATUSES } from '../types';
 import './RothComparisonTab.css';
 
 const RothComparisonTab: React.FC = () => {
   const { persons, entries, rates, statesByYear } = usePlan();
   const [loading, setLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<RothComparisonResponse | null>(null);
   const [filingStatus, setFilingStatus] = useState<FilingStatus>('MARRIED_FILING_JOINTLY');
@@ -58,6 +59,49 @@ const RothComparisonTab: React.FC = () => {
     }
   };
 
+  const handleCellClick = async (row: RothComparisonRow) => {
+    if (pdfLoading) return;
+
+    const scenarioName = row.scenarioName;
+    setPdfLoading(scenarioName);
+    setError(null);
+
+    try {
+      const planData = {
+        persons,
+        entries,
+        rates,
+        statesByYear,
+      };
+
+      // Determine the Roth conversion threshold
+      // No Conversion = 0 (or null), otherwise use the bracket threshold
+      const rothConversionThreshold = row.bracketThreshold || 0;
+
+      const pdfBlob = await planApi.generateScenarioPdf({
+        planData,
+        filingStatus,
+        rothConversionThreshold,
+        scenarioName,
+      });
+
+      // Download the PDF
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `financial_plan_${scenarioName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('Failed to generate PDF for this scenario. Please try again.');
+      console.error(err);
+    } finally {
+      setPdfLoading(null);
+    }
+  };
+
   const renderCell = (cell: RothComparisonCell, isBaseline: boolean): React.ReactNode => {
     if (cell.hasShortfall) {
       return (
@@ -89,6 +133,7 @@ const RothComparisonTab: React.FC = () => {
       <p className="tab-description">
         Compare 5-year net worth projections with different Roth conversion strategies.
         See how filling different tax brackets affects your long-term financial outcomes.
+        <strong> Click any cell to generate a PDF for that scenario.</strong>
       </p>
 
       <div className="comparison-inputs">
@@ -128,6 +173,12 @@ const RothComparisonTab: React.FC = () => {
 
       {error && <div className="error-message">{error}</div>}
 
+      {pdfLoading && (
+        <div className="pdf-loading-message">
+          Generating PDF for "{pdfLoading}"...
+        </div>
+      )}
+
       {results && (
         <div className="comparison-results">
           <h3>Roth Conversion Strategy Comparison</h3>
@@ -136,7 +187,7 @@ const RothComparisonTab: React.FC = () => {
               <thead>
                 <tr>
                   <th className="scenario-header">Scenario</th>
-                  {results.milestoneYears.map((year, index) => (
+                  {results.milestoneYears.map((year) => (
                     <th key={year} className="year-header">
                       <div className="year-label">{year}</div>
                       <div className="year-offset">
@@ -160,7 +211,9 @@ const RothComparisonTab: React.FC = () => {
                     {row.cells.map((cell) => (
                       <td
                         key={cell.year}
-                        className={`data-cell ${cell.hasShortfall ? 'cell-shortfall' : cell.netWorthDelta > 0 ? 'cell-positive' : cell.netWorthDelta < 0 ? 'cell-negative' : ''}`}
+                        className={`data-cell clickable-cell ${cell.hasShortfall ? 'cell-shortfall' : cell.netWorthDelta > 0 ? 'cell-positive' : cell.netWorthDelta < 0 ? 'cell-negative' : ''}`}
+                        onClick={() => handleCellClick(row)}
+                        title="Click to generate PDF for this scenario"
                       >
                         {renderCell(cell, rowIndex === 0)}
                       </td>
@@ -201,6 +254,7 @@ const RothComparisonTab: React.FC = () => {
               <li><strong>Delta:</strong> Difference in net worth compared to no-conversion baseline.</li>
               <li><strong>Tax:</strong> Cumulative federal + state income taxes paid from start to milestone.</li>
               <li><strong>Roth:</strong> Roth account balance at each milestone.</li>
+              <li><strong>Click any cell</strong> to generate a detailed PDF for that scenario.</li>
             </ul>
           </div>
         </div>
