@@ -7,22 +7,28 @@ public class PersonDTO {
     private String name;
     private int yearOfBirth;
     private Integer currentAge;
+    private boolean selfEmployed;
 
     public PersonDTO() {
     }
 
     public PersonDTO(String name, int yearOfBirth) {
+        this(name, yearOfBirth, false);
+    }
+
+    public PersonDTO(String name, int yearOfBirth, boolean selfEmployed) {
         this.name = name;
         this.yearOfBirth = yearOfBirth;
         this.currentAge = Year.now().getValue() - yearOfBirth;
+        this.selfEmployed = selfEmployed;
     }
 
     public static PersonDTO fromPerson(Person person) {
-        return new PersonDTO(person.name(), person.yearOfBirth());
+        return new PersonDTO(person.name(), person.yearOfBirth(), person.isSelfEmployed());
     }
 
     public Person toPerson() {
-        return new Person(name, yearOfBirth);
+        return new Person(name, yearOfBirth, selfEmployed);
     }
 
     public String getName() {
@@ -51,5 +57,13 @@ public class PersonDTO {
 
     public void setCurrentAge(Integer currentAge) {
         this.currentAge = currentAge;
+    }
+
+    public boolean isSelfEmployed() {
+        return selfEmployed;
+    }
+
+    public void setSelfEmployed(boolean selfEmployed) {
+        this.selfEmployed = selfEmployed;
     }
 }

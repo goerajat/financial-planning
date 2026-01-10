@@ -2,6 +2,7 @@ package rg.financialplanning.strategy;
 
 import rg.financialplanning.calculator.FederalTaxCalculator;
 import rg.financialplanning.calculator.LongTermCapitalGainsCalculator;
+import rg.financialplanning.calculator.MedicareTaxCalculator;
 import rg.financialplanning.calculator.SocialSecurityTaxCalculator;
 import rg.financialplanning.calculator.StateTaxCalculatorFactory;
 import rg.financialplanning.calculator.TaxCalculator;
@@ -37,6 +38,7 @@ public class TaxCalculationStrategy implements TaxOptimizationStrategy {
 
     private final FederalTaxCalculator federalTaxCalculator;
     private final SocialSecurityTaxCalculator socialSecurityTaxCalculator;
+    private final MedicareTaxCalculator medicareTaxCalculator;
     private final LongTermCapitalGainsCalculator capitalGainsCalculator;
     private final FilingStatus filingStatus;
     private final List<StateByYear> statesByYear;
@@ -67,6 +69,7 @@ public class TaxCalculationStrategy implements TaxOptimizationStrategy {
     public TaxCalculationStrategy(FilingStatus filingStatus, List<StateByYear> statesByYear) {
         this.federalTaxCalculator = new FederalTaxCalculator();
         this.socialSecurityTaxCalculator = new SocialSecurityTaxCalculator();
+        this.medicareTaxCalculator = new MedicareTaxCalculator();
         this.capitalGainsCalculator = new LongTermCapitalGainsCalculator();
         this.filingStatus = filingStatus;
         this.statesByYear = statesByYear != null ? new ArrayList<>(statesByYear) : new ArrayList<>();
@@ -80,7 +83,7 @@ public class TaxCalculationStrategy implements TaxOptimizationStrategy {
 
         // Calculate and store all taxes
         calculateAndStoreTaxes(currentYearlySummary);
-    }
+     }
 
     /**
      * Calculates all taxes and stores them in the YearlySummary.
@@ -100,15 +103,12 @@ public class TaxCalculationStrategy implements TaxOptimizationStrategy {
         double stateIncomeTax = stateTaxCalculator.calculateTax(summary, filingStatus);
         summary.setStateIncomeTax(stateIncomeTax);
 
-        // Social Security and Medicare taxes are based on earned income only
-        double earnedIncome = summary.totalIncome();
-
-        double socialSecurityTax = socialSecurityTaxCalculator.calculateSocialSecurityTax(earnedIncome, false);
+        // Social Security and Medicare taxes - calculated per individual based on self-employment status
+        double socialSecurityTax = socialSecurityTaxCalculator.calculateTax(summary, filingStatus);
         summary.setSocialSecurityTax(socialSecurityTax);
 
-        double medicareTax = socialSecurityTaxCalculator.calculateMedicareTax(earnedIncome, false);
-        double additionalMedicareTax = socialSecurityTaxCalculator.calculateAdditionalMedicareTax(earnedIncome, filingStatus);
-        summary.setMedicareTax(medicareTax + additionalMedicareTax);
+        double medicareTax = medicareTaxCalculator.calculateTax(summary, filingStatus);
+        summary.setMedicareTax(medicareTax);
 
         // Capital gains tax on non-qualified withdrawals
         double capitalGainsTax = calculateCapitalGainsTax(summary);

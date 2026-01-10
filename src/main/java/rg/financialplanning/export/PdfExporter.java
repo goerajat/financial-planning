@@ -599,6 +599,9 @@ public class PdfExporter {
                     IndividualYearlySummary::socialSecurityBenefits, rowNum++);
         }
 
+        // One-off Proceeds
+        addTotalRow(table, "Total One-off Proceeds", summaries, YearlySummary::oneOffProceeds, rowNum++);
+
         // Total Cash Inflows
         addSummaryRow(table, "TOTAL CASH INFLOWS", summaries, YearlySummary::totalCashInflows, columnCount);
 

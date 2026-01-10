@@ -206,13 +206,14 @@ public class FinancialDataProcessor {
             int year = earliestStartYear + i;
             YearlySummary previousSummary = i > 0 ? summaries[i - 1] : null;
 
-            // Income, Expenses, Social Security, and Contributions: Calculate from active entries
+            // Income, Expenses, Social Security, Contributions, and One-off Proceeds: Calculate from active entries
             double totalIncome = 0;
             double totalExpenses = 0;
             double totalSocialSecurity = 0;
             double rothContributions = 0;
             double qualifiedContributions = 0;
             double lifeInsuranceContributions = 0;
+            double oneOffProceeds = 0;
             Map<String, Double> incomeByName = new HashMap<>();
             Map<String, Double> socialSecurityByName = new HashMap<>();
             Map<String, Double> rothContributionsByName = new HashMap<>();
@@ -243,6 +244,7 @@ public class FinancialDataProcessor {
                             qualifiedContributionsByName.merge(name, calculatedValue, Double::sum);
                         }
                         case LIFE_INSURANCE_CONTRIBUTION -> lifeInsuranceContributions += calculatedValue;
+                        case ONE_OFF_PROCEEDS -> oneOffProceeds += calculatedValue;
                         default -> { /* handled below */ }
                     }
                 }
@@ -438,6 +440,9 @@ public class FinancialDataProcessor {
             summaries[i].setMortgageBalance(mortgageBalance);
             summaries[i].setMortgageRepayment(mortgageRepayment);
 
+            // Set one-off proceeds
+            summaries[i].setOneOffProceeds(oneOffProceeds);
+
             // Apply tax optimization strategy after creating the summary
             if (taxOptimizationStrategy != null) {
                 taxOptimizationStrategy.optimize(previousSummary, summaries[i]);
@@ -615,6 +620,9 @@ public class FinancialDataProcessor {
                 writeIndividualRow(writer, name + " Cash Withdrawals", summaries, name,
                         ind -> ind.cashWithdrawals());
             }
+
+            // One-off Proceeds
+            writeTotalRow(writer, "Total One-off Proceeds", summaries, YearlySummary::oneOffProceeds);
 
             // Social Security Benefits
             writeTotalRow(writer, "Total Social Security Benefits", summaries, YearlySummary::totalSocialSecurity);

@@ -204,6 +204,7 @@ public class EntryEditDialog extends Dialog<ObservableFinancialEntry> {
             case LIFE_INSURANCE_CONTRIBUTION -> "Life Insurance Premium";
             case MORTGAGE -> "Mortgage";
             case MORTGAGE_REPAYMENT -> "Mortgage Extra Payment";
+            case ONE_OFF_PROCEEDS -> "One-off Proceeds";
         };
     }
 
@@ -223,6 +224,7 @@ public class EntryEditDialog extends Dialog<ObservableFinancialEntry> {
             case LIFE_INSURANCE_CONTRIBUTION -> "Annual life insurance premium payments";
             case MORTGAGE -> "Mortgage loan (value = balance, description = annual payment)";
             case MORTGAGE_REPAYMENT -> "Extra principal payments on mortgage";
+            case ONE_OFF_PROCEEDS -> "One-time income (e.g., property sale, inheritance)";
         };
     }
 }

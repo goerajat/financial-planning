@@ -356,33 +356,50 @@ public class StateScenarioTabController {
         Dialog<StateScenario> dialog = new Dialog<>();
         dialog.setTitle(existingScenario == null ? "Add Scenario" : "Edit Scenario");
         dialog.setHeaderText(null);
+        dialog.setResizable(true);
 
         ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
 
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
+        VBox mainContent = new VBox(15);
+        mainContent.setPadding(new Insets(20));
+        mainContent.setPrefWidth(550);
 
-        // Scenario name
+        // Scenario name section
+        HBox nameBox = new HBox(10);
+        nameBox.setAlignment(Pos.CENTER_LEFT);
+        Label nameLabel = new Label("Scenario Name:");
+        nameLabel.setMinWidth(100);
         TextField nameField = new TextField();
         nameField.setPromptText("e.g., Move to FL in 2030");
-        nameField.setPrefWidth(250);
+        nameField.setPrefWidth(400);
+        HBox.setHgrow(nameField, Priority.ALWAYS);
         if (existingScenario != null) {
             nameField.setText(existingScenario.name);
         }
+        nameBox.getChildren().addAll(nameLabel, nameField);
 
-        grid.add(new Label("Scenario Name:"), 0, 0);
-        grid.add(nameField, 1, 0);
-
-        // State ranges
+        // State ranges section
         Label rangesLabel = new Label("State Residence Periods:");
         rangesLabel.setStyle("-fx-font-weight: bold;");
-        grid.add(rangesLabel, 0, 1, 2, 1);
 
-        VBox rangesBox = new VBox(5);
+        VBox rangesBox = new VBox(8);
+        rangesBox.setPadding(new Insets(10));
+        rangesBox.setStyle("-fx-background-color: #f9f9f9; -fx-background-radius: 4;");
         List<StateRangeEditor> rangeEditors = new ArrayList<>();
+
+        // Calculate base height for dialog adjustment
+        final double ROW_HEIGHT = 40.0;
+        final double BASE_HEIGHT = 250.0;
+        final double MAX_HEIGHT = 500.0;
+
+        // Function to update dialog height
+        Runnable updateDialogHeight = () -> {
+            double newHeight = BASE_HEIGHT + (rangeEditors.size() * ROW_HEIGHT);
+            newHeight = Math.min(newHeight, MAX_HEIGHT);
+            dialog.setHeight(newHeight);
+            dialog.getDialogPane().getScene().getWindow().sizeToScene();
+        };
 
         Runnable addRange = () -> {
             StateRangeEditor editor = new StateRangeEditor(currentYear);
@@ -391,7 +408,9 @@ public class StateScenarioTabController {
             editor.setOnRemove(() -> {
                 rangeEditors.remove(editor);
                 rangesBox.getChildren().remove(editor.getNode());
+                updateDialogHeight.run();
             });
+            updateDialogHeight.run();
         };
 
         // Initialize with existing data or default
@@ -406,6 +425,7 @@ public class StateScenarioTabController {
                 editor.setOnRemove(() -> {
                     rangeEditors.remove(editor);
                     rangesBox.getChildren().remove(editor.getNode());
+                    updateDialogHeight.run();
                 });
             }
         } else {
@@ -413,13 +433,33 @@ public class StateScenarioTabController {
         }
 
         Button addRangeBtn = new Button("+ Add State Period");
-        addRangeBtn.setStyle("-fx-font-size: 11px;");
+        addRangeBtn.setStyle("-fx-font-size: 12px; -fx-background-color: #e8f5e9; -fx-text-fill: #2e7d32;");
         addRangeBtn.setOnAction(e -> addRange.run());
 
-        VBox rangesContainer = new VBox(10, rangesBox, addRangeBtn);
-        grid.add(rangesContainer, 0, 2, 2, 1);
+        // ScrollPane to handle many state entries
+        ScrollPane scrollPane = new ScrollPane(rangesBox);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setStyle("-fx-background-color: transparent;");
+        scrollPane.setMinHeight(60);
+        scrollPane.setMaxHeight(300);
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
-        dialog.getDialogPane().setContent(grid);
+        // Hint label
+        Label hintLabel = new Label("Define which state you'll reside in for each period. Periods should cover consecutive years without gaps.");
+        hintLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #666; -fx-font-style: italic;");
+        hintLabel.setWrapText(true);
+
+        mainContent.getChildren().addAll(nameBox, rangesLabel, scrollPane, addRangeBtn, hintLabel);
+
+        dialog.getDialogPane().setContent(mainContent);
+
+        // Set initial dialog size based on number of existing ranges
+        double initialHeight = BASE_HEIGHT + (rangeEditors.size() * ROW_HEIGHT);
+        initialHeight = Math.min(initialHeight, MAX_HEIGHT);
+        dialog.getDialogPane().setMinHeight(initialHeight);
+        dialog.getDialogPane().setPrefHeight(initialHeight);
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == saveButtonType) {

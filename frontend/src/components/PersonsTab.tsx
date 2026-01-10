@@ -6,7 +6,7 @@ import './Tab.css';
 const PersonsTab: React.FC = () => {
   const { persons, addPerson, updatePerson, deletePerson } = usePlan();
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [formData, setFormData] = useState<Person>({ name: '', yearOfBirth: 1980 });
+  const [formData, setFormData] = useState<Person>({ name: '', yearOfBirth: 1980, selfEmployed: false });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,7 +16,7 @@ const PersonsTab: React.FC = () => {
     } else {
       addPerson(formData);
     }
-    setFormData({ name: '', yearOfBirth: 1980 });
+    setFormData({ name: '', yearOfBirth: 1980, selfEmployed: false });
   };
 
   const handleEdit = (index: number) => {
@@ -26,7 +26,7 @@ const PersonsTab: React.FC = () => {
 
   const handleCancel = () => {
     setEditIndex(null);
-    setFormData({ name: '', yearOfBirth: 1980 });
+    setFormData({ name: '', yearOfBirth: 1980, selfEmployed: false });
   };
 
   return (
@@ -48,6 +48,14 @@ const PersonsTab: React.FC = () => {
           onChange={e => setFormData({ ...formData, yearOfBirth: parseInt(e.target.value) })}
           required
         />
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={formData.selfEmployed || false}
+            onChange={e => setFormData({ ...formData, selfEmployed: e.target.checked })}
+          />
+          Self-Employed
+        </label>
         <button type="submit">{editIndex !== null ? 'Update' : 'Add'}</button>
         {editIndex !== null && (
           <button type="button" onClick={handleCancel}>Cancel</button>
@@ -60,6 +68,7 @@ const PersonsTab: React.FC = () => {
             <th>Name</th>
             <th>Year of Birth</th>
             <th>Current Age</th>
+            <th>Self-Employed</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -69,6 +78,7 @@ const PersonsTab: React.FC = () => {
               <td>{person.name}</td>
               <td>{person.yearOfBirth}</td>
               <td>{person.currentAge}</td>
+              <td>{person.selfEmployed ? 'Yes' : 'No'}</td>
               <td>
                 <button onClick={() => handleEdit(index)}>Edit</button>
                 <button onClick={() => deletePerson(index)}>Delete</button>
@@ -77,7 +87,7 @@ const PersonsTab: React.FC = () => {
           ))}
           {persons.length === 0 && (
             <tr>
-              <td colSpan={4} className="empty-message">No persons added yet</td>
+              <td colSpan={5} className="empty-message">No persons added yet</td>
             </tr>
           )}
         </tbody>

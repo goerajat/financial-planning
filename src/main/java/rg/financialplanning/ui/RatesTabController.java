@@ -124,6 +124,7 @@ public class RatesTabController {
             case LIFE_INSURANCE_CONTRIBUTION -> "Premium increase rate";
             case MORTGAGE -> "Mortgage interest rate";
             case MORTGAGE_REPAYMENT -> "Extra payment increase rate";
+            case ONE_OFF_PROCEEDS -> "One-off proceeds growth rate (typically 0)";
         };
     }
 

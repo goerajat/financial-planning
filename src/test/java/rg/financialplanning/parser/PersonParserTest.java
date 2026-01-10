@@ -198,4 +198,79 @@ public class PersonParserTest {
         assertEquals("John", john.name());
         assertEquals(1970, john.yearOfBirth());
     }
+
+    @Test
+    public void testLoadFromCsv_withSelfEmployedColumn() throws IOException {
+        File csvFile = tempFolder.newFile("persons.csv");
+        String content = "name,yearOfBirth,selfEmployed\nJohn,1970,true\nJane,1975,false";
+        Files.writeString(csvFile.toPath(), content);
+
+        parser.loadFromCsv(csvFile.getAbsolutePath());
+        List<Person> persons = parser.getPersons();
+
+        assertEquals(2, persons.size());
+        assertTrue(persons.get(0).isSelfEmployed());
+        assertFalse(persons.get(1).isSelfEmployed());
+    }
+
+    @Test
+    public void testLoadFromCsv_selfEmployedAcceptsYes() throws IOException {
+        File csvFile = tempFolder.newFile("persons.csv");
+        String content = "name,yearOfBirth,selfEmployed\nJohn,1970,yes";
+        Files.writeString(csvFile.toPath(), content);
+
+        parser.loadFromCsv(csvFile.getAbsolutePath());
+        Person john = parser.getPersons().get(0);
+
+        assertTrue(john.isSelfEmployed());
+    }
+
+    @Test
+    public void testLoadFromCsv_selfEmployedAcceptsOne() throws IOException {
+        File csvFile = tempFolder.newFile("persons.csv");
+        String content = "name,yearOfBirth,selfEmployed\nJohn,1970,1";
+        Files.writeString(csvFile.toPath(), content);
+
+        parser.loadFromCsv(csvFile.getAbsolutePath());
+        Person john = parser.getPersons().get(0);
+
+        assertTrue(john.isSelfEmployed());
+    }
+
+    @Test
+    public void testLoadFromCsv_selfEmployedDefaultsToFalse() throws IOException {
+        File csvFile = tempFolder.newFile("persons.csv");
+        String content = "name,yearOfBirth\nJohn,1970";
+        Files.writeString(csvFile.toPath(), content);
+
+        parser.loadFromCsv(csvFile.getAbsolutePath());
+        Person john = parser.getPersons().get(0);
+
+        assertFalse(john.isSelfEmployed());
+    }
+
+    @Test
+    public void testLoadFromCsv_emptySelfEmployedDefaultsToFalse() throws IOException {
+        File csvFile = tempFolder.newFile("persons.csv");
+        String content = "name,yearOfBirth,selfEmployed\nJohn,1970,";
+        Files.writeString(csvFile.toPath(), content);
+
+        parser.loadFromCsv(csvFile.getAbsolutePath());
+        Person john = parser.getPersons().get(0);
+
+        assertFalse(john.isSelfEmployed());
+    }
+
+    @Test
+    public void testLoadFromCsv_selfEmployedCaseInsensitive() throws IOException {
+        File csvFile = tempFolder.newFile("persons.csv");
+        String content = "name,yearOfBirth,selfEmployed\nJohn,1970,TRUE\nJane,1975,Yes";
+        Files.writeString(csvFile.toPath(), content);
+
+        parser.loadFromCsv(csvFile.getAbsolutePath());
+        List<Person> persons = parser.getPersons();
+
+        assertTrue(persons.get(0).isSelfEmployed());
+        assertTrue(persons.get(1).isSelfEmployed());
+    }
 }

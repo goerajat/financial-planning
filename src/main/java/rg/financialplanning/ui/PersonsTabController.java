@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.*;
 import javafx.util.converter.IntegerStringConverter;
@@ -106,9 +107,17 @@ public class PersonsTabController {
         ageColumn.setPrefWidth(100);
         ageColumn.setStyle("-fx-alignment: CENTER;");
 
+        // Self-Employed column
+        TableColumn<ObservablePerson, Boolean> selfEmployedColumn = new TableColumn<>("Self-Employed");
+        selfEmployedColumn.setCellValueFactory(cellData -> cellData.getValue().selfEmployedProperty());
+        selfEmployedColumn.setCellFactory(CheckBoxTableCell.forTableColumn(selfEmployedColumn));
+        selfEmployedColumn.setPrefWidth(100);
+        selfEmployedColumn.setStyle("-fx-alignment: CENTER;");
+
         tableView.getColumns().add(nameColumn);
         tableView.getColumns().add(yearColumn);
         tableView.getColumns().add(ageColumn);
+        tableView.getColumns().add(selfEmployedColumn);
     }
 
     private HBox createButtonBar() {
@@ -156,6 +165,7 @@ public class PersonsTabController {
             result.ifPresent(updated -> {
                 selected.setName(updated.getName());
                 selected.setYearOfBirth(updated.getYearOfBirth());
+                selected.setSelfEmployed(updated.isSelfEmployed());
                 tableView.refresh();
             });
         }

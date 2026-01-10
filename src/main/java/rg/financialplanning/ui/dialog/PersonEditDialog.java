@@ -15,6 +15,7 @@ public class PersonEditDialog extends Dialog<ObservablePerson> {
     private final TextField nameField;
     private final ComboBox<Integer> yearComboBox;
     private final Label ageLabel;
+    private final CheckBox selfEmployedCheckBox;
 
     public PersonEditDialog(ObservablePerson existingPerson) {
         setTitle(existingPerson == null ? "Add Person" : "Edit Person");
@@ -47,6 +48,8 @@ public class PersonEditDialog extends Dialog<ObservablePerson> {
         ageLabel = new Label();
         ageLabel.setStyle("-fx-text-fill: #666;");
 
+        selfEmployedCheckBox = new CheckBox();
+
         // Update age label when year changes
         yearComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
@@ -59,6 +62,7 @@ public class PersonEditDialog extends Dialog<ObservablePerson> {
         if (existingPerson != null) {
             nameField.setText(existingPerson.getName());
             yearComboBox.setValue(existingPerson.getYearOfBirth());
+            selfEmployedCheckBox.setSelected(existingPerson.isSelfEmployed());
         }
 
         // Trigger initial age calculation
@@ -70,6 +74,8 @@ public class PersonEditDialog extends Dialog<ObservablePerson> {
         grid.add(new Label("Year of Birth:"), 0, 1);
         grid.add(yearComboBox, 1, 1);
         grid.add(ageLabel, 2, 1);
+        grid.add(new Label("Self-Employed:"), 0, 2);
+        grid.add(selfEmployedCheckBox, 1, 2);
 
         getDialogPane().setContent(grid);
 
@@ -89,7 +95,8 @@ public class PersonEditDialog extends Dialog<ObservablePerson> {
             if (dialogButton == saveButtonType) {
                 String name = nameField.getText().trim();
                 int yearOfBirth = yearComboBox.getValue();
-                return new ObservablePerson(name, yearOfBirth);
+                boolean selfEmployed = selfEmployedCheckBox.isSelected();
+                return new ObservablePerson(name, yearOfBirth, selfEmployed);
             }
             return null;
         });

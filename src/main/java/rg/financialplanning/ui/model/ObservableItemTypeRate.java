@@ -60,6 +60,7 @@ public class ObservableItemTypeRate {
             case LIFE_INSURANCE_CONTRIBUTION -> "Life Insurance Contribution";
             case MORTGAGE -> "Mortgage Interest Rate";
             case MORTGAGE_REPAYMENT -> "Mortgage Repayment";
+            case ONE_OFF_PROCEEDS -> "One-off Proceeds";
         };
     }
 

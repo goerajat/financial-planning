@@ -43,6 +43,7 @@ public class RateDTO {
             case LIFE_INSURANCE_CONTRIBUTION -> "Life Insurance Premium";
             case MORTGAGE -> "Mortgage";
             case MORTGAGE_REPAYMENT -> "Mortgage Extra Payment";
+            case ONE_OFF_PROCEEDS -> "One-off Proceeds";
         };
     }
 
@@ -62,6 +63,7 @@ public class RateDTO {
             case LIFE_INSURANCE_CONTRIBUTION -> "Growth rate for insurance premiums";
             case MORTGAGE -> "Mortgage interest rate";
             case MORTGAGE_REPAYMENT -> "Not applicable (set to 0)";
+            case ONE_OFF_PROCEEDS -> "Not applicable for one-time events (set to 0)";
         };
     }
 

@@ -2,6 +2,7 @@ export interface Person {
   name: string;
   yearOfBirth: number;
   currentAge?: number;
+  selfEmployed?: boolean;
 }
 
 export interface FinancialEntry {

@@ -13,7 +13,8 @@ import java.util.stream.Collectors;
 
 /**
  * Parser for reading person data from a CSV file.
- * Expected format: name,yearOfBirth
+ * Expected format: name,yearOfBirth[,isSelfEmployed]
+ * The isSelfEmployed column is optional and defaults to false.
  */
 public class PersonParser {
 
@@ -56,7 +57,7 @@ public class PersonParser {
     private Person parseLine(String line) {
         String[] parts = line.split(",", -1);
         if (parts.length < 2) {
-            throw new IllegalArgumentException("Expected 2 columns (name, yearOfBirth), found " + parts.length);
+            throw new IllegalArgumentException("Expected at least 2 columns (name, yearOfBirth), found " + parts.length);
         }
 
         String name = parts[0].trim();
@@ -70,7 +71,15 @@ public class PersonParser {
         }
 
         int yearOfBirth = Integer.parseInt(yearOfBirthStr);
-        return new Person(name, yearOfBirth);
+
+        // Parse optional isSelfEmployed column (defaults to false)
+        boolean isSelfEmployed = false;
+        if (parts.length >= 3 && !parts[2].trim().isEmpty()) {
+            String selfEmployedStr = parts[2].trim().toLowerCase();
+            isSelfEmployed = selfEmployedStr.equals("true") || selfEmployedStr.equals("yes") || selfEmployedStr.equals("1");
+        }
+
+        return new Person(name, yearOfBirth, isSelfEmployed);
     }
 
     public List<Person> getPersons() {

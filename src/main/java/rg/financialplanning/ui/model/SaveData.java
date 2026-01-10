@@ -59,13 +59,19 @@ public class SaveData {
     public static class PersonData {
         private String name;
         private int yearOfBirth;
+        private boolean selfEmployed;
 
         public PersonData() {
         }
 
         public PersonData(String name, int yearOfBirth) {
+            this(name, yearOfBirth, false);
+        }
+
+        public PersonData(String name, int yearOfBirth, boolean selfEmployed) {
             this.name = name;
             this.yearOfBirth = yearOfBirth;
+            this.selfEmployed = selfEmployed;
         }
 
         public String getName() {
@@ -82,6 +88,14 @@ public class SaveData {
 
         public void setYearOfBirth(int yearOfBirth) {
             this.yearOfBirth = yearOfBirth;
+        }
+
+        public boolean isSelfEmployed() {
+            return selfEmployed;
+        }
+
+        public void setSelfEmployed(boolean selfEmployed) {
+            this.selfEmployed = selfEmployed;
         }
     }
 

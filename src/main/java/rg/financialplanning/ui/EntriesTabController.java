@@ -248,6 +248,7 @@ public class EntriesTabController {
             case LIFE_INSURANCE_CONTRIBUTION -> "Life Insurance Premium";
             case MORTGAGE -> "Mortgage";
             case MORTGAGE_REPAYMENT -> "Mortgage Extra Payment";
+            case ONE_OFF_PROCEEDS -> "One-off Proceeds";
         };
     }
 

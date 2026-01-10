@@ -11,6 +11,24 @@ public class PersonTest {
         Person person = new Person("John Doe", 1970);
         assertEquals("John Doe", person.name());
         assertEquals(1970, person.yearOfBirth());
+        assertFalse(person.isSelfEmployed());
+    }
+
+    @Test
+    public void testConstructor_withSelfEmployed() {
+        Person selfEmployed = new Person("Jane Doe", 1975, true);
+        assertEquals("Jane Doe", selfEmployed.name());
+        assertEquals(1975, selfEmployed.yearOfBirth());
+        assertTrue(selfEmployed.isSelfEmployed());
+
+        Person notSelfEmployed = new Person("John Doe", 1970, false);
+        assertFalse(notSelfEmployed.isSelfEmployed());
+    }
+
+    @Test
+    public void testConstructor_defaultSelfEmployedIsFalse() {
+        Person person = new Person("Test Person", 1980);
+        assertFalse(person.isSelfEmployed());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -70,6 +88,13 @@ public class PersonTest {
     }
 
     @Test
+    public void testEquals_samePersonWithSelfEmployed() {
+        Person person1 = new Person("John Doe", 1970, true);
+        Person person2 = new Person("John Doe", 1970, true);
+        assertEquals(person1, person2);
+    }
+
+    @Test
     public void testEquals_differentName() {
         Person person1 = new Person("John Doe", 1970);
         Person person2 = new Person("Jane Doe", 1970);
@@ -80,6 +105,13 @@ public class PersonTest {
     public void testEquals_differentYearOfBirth() {
         Person person1 = new Person("John Doe", 1970);
         Person person2 = new Person("John Doe", 1980);
+        assertNotEquals(person1, person2);
+    }
+
+    @Test
+    public void testEquals_differentSelfEmployed() {
+        Person person1 = new Person("John Doe", 1970, false);
+        Person person2 = new Person("John Doe", 1970, true);
         assertNotEquals(person1, person2);
     }
 
@@ -97,9 +129,30 @@ public class PersonTest {
     }
 
     @Test
+    public void testHashCode_sameForEqualPersonsWithSelfEmployed() {
+        Person person1 = new Person("John Doe", 1970, true);
+        Person person2 = new Person("John Doe", 1970, true);
+        assertEquals(person1.hashCode(), person2.hashCode());
+    }
+
+    @Test
+    public void testHashCode_differentForDifferentSelfEmployed() {
+        Person person1 = new Person("John Doe", 1970, false);
+        Person person2 = new Person("John Doe", 1970, true);
+        assertNotEquals(person1.hashCode(), person2.hashCode());
+    }
+
+    @Test
     public void testToString() {
         Person person = new Person("John Doe", 1970);
         String expected = "John Doe (born 1970)";
+        assertEquals(expected, person.toString());
+    }
+
+    @Test
+    public void testToString_selfEmployed() {
+        Person person = new Person("Jane Doe", 1975, true);
+        String expected = "Jane Doe (born 1975, self-employed)";
         assertEquals(expected, person.toString());
     }
 }

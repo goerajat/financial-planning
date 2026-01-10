@@ -9,8 +9,13 @@ import java.util.Objects;
 public class Person {
     private final String name;
     private final int yearOfBirth;
+    private final boolean selfEmployed;
 
     public Person(String name, int yearOfBirth) {
+        this(name, yearOfBirth, false);
+    }
+
+    public Person(String name, int yearOfBirth, boolean selfEmployed) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Name cannot be null or empty");
         }
@@ -19,6 +24,7 @@ public class Person {
         }
         this.name = name;
         this.yearOfBirth = yearOfBirth;
+        this.selfEmployed = selfEmployed;
     }
 
     public String name() {
@@ -27,6 +33,10 @@ public class Person {
 
     public int yearOfBirth() {
         return yearOfBirth;
+    }
+
+    public boolean isSelfEmployed() {
+        return selfEmployed;
     }
 
     public int getAgeInYear(int year) {
@@ -42,16 +52,16 @@ public class Person {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Person person = (Person) o;
-        return yearOfBirth == person.yearOfBirth && Objects.equals(name, person.name);
+        return yearOfBirth == person.yearOfBirth && selfEmployed == person.selfEmployed && Objects.equals(name, person.name);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, yearOfBirth);
+        return Objects.hash(name, yearOfBirth, selfEmployed);
     }
 
     @Override
     public String toString() {
-        return String.format("%s (born %d)", name, yearOfBirth);
+        return String.format("%s (born %d%s)", name, yearOfBirth, selfEmployed ? ", self-employed" : "");
     }
 }

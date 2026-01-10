@@ -49,7 +49,7 @@ public class DataPersistence {
         // Convert persons
         List<SaveData.PersonData> personDataList = new ArrayList<>();
         for (ObservablePerson person : persons) {
-            personDataList.add(new SaveData.PersonData(person.getName(), person.getYearOfBirth()));
+            personDataList.add(new SaveData.PersonData(person.getName(), person.getYearOfBirth(), person.isSelfEmployed()));
         }
         saveData.setPersons(personDataList);
 
@@ -116,7 +116,7 @@ public class DataPersistence {
         // Load persons
         if (saveData.getPersons() != null) {
             for (SaveData.PersonData personData : saveData.getPersons()) {
-                persons.add(new ObservablePerson(personData.getName(), personData.getYearOfBirth()));
+                persons.add(new ObservablePerson(personData.getName(), personData.getYearOfBirth(), personData.isSelfEmployed()));
             }
         }
 
