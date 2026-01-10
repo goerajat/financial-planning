@@ -50,6 +50,7 @@ public class MainController {
     private final ObservableList<ObservableStateByYear> statesByYear = FXCollections.observableArrayList();
 
     // Tab controllers
+    private GettingStartedTabController gettingStartedTabController;
     private PersonsTabController personsTabController;
     private EntriesTabController entriesTabController;
     private RatesTabController ratesTabController;
@@ -100,6 +101,11 @@ public class MainController {
     }
 
     private void initializeTabs() {
+        // Getting Started Tab
+        gettingStartedTabController = new GettingStartedTabController();
+        Tab gettingStartedTab = new Tab("Getting Started", gettingStartedTabController.getRoot());
+        gettingStartedTab.setClosable(false);
+
         // Persons Tab
         personsTabController = new PersonsTabController(persons);
         Tab personsTab = new Tab("Persons", personsTabController.getRoot());
@@ -140,7 +146,7 @@ public class MainController {
         Tab stateScenarioTab = new Tab("State Scenarios", stateScenarioTabController.getRoot());
         stateScenarioTab.setClosable(false);
 
-        tabPane.getTabs().addAll(personsTab, entriesTab, ratesTab, statesTab, resultsTab, sensitivityTab, rothComparisonTab, stateScenarioTab);
+        tabPane.getTabs().addAll(gettingStartedTab, personsTab, entriesTab, ratesTab, statesTab, resultsTab, sensitivityTab, rothComparisonTab, stateScenarioTab);
     }
 
     private void initializeBottomBar() {
@@ -262,8 +268,8 @@ public class MainController {
             // Display in results tab
             resultsTabController.displayPdf(lastGeneratedPdf);
 
-            // Switch to results tab
-            tabPane.getSelectionModel().select(3);
+            // Switch to results tab (index 5: Getting Started, Persons, Entries, Rates, States, Results)
+            tabPane.getSelectionModel().select(5);
         });
 
         generateService.setOnFailed(e -> {

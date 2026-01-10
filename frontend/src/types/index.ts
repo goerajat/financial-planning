@@ -58,6 +58,7 @@ export const ITEM_TYPES = [
   { value: 'LIFE_INSURANCE_CONTRIBUTION', label: 'Life Insurance Premium' },
   { value: 'MORTGAGE', label: 'Mortgage' },
   { value: 'MORTGAGE_REPAYMENT', label: 'Mortgage Extra Payment' },
+  { value: 'ONE_OFF_PROCEEDS', label: 'One-off Proceeds' },
 ] as const;
 
 export type ItemType = typeof ITEM_TYPES[number]['value'];

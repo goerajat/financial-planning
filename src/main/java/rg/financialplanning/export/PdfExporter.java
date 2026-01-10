@@ -3,11 +3,18 @@ package rg.financialplanning.export;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.colors.DeviceRgb;
+import com.itextpdf.kernel.events.Event;
+import com.itextpdf.kernel.events.IEventHandler;
+import com.itextpdf.kernel.events.PdfDocumentEvent;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
+import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.layout.Canvas;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.borders.SolidBorder;
@@ -43,6 +50,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -66,11 +75,14 @@ import java.util.function.ToDoubleFunction;
 public class PdfExporter {
 
     private static final int MAX_YEARS_PER_PAGE = 10;
-    private static final DeviceRgb SECTION_HEADER_COLOR = new DeviceRgb(41, 128, 185);
-    private static final DeviceRgb ROW_ALTERNATE_COLOR = new DeviceRgb(245, 245, 245);
-    private static final DeviceRgb TOTAL_ROW_COLOR = new DeviceRgb(180, 198, 220);
-    private static final DeviceRgb SUBSECTION_COLOR = new DeviceRgb(52, 73, 94);
-    private static final DeviceRgb NET_WORTH_COLOR = new DeviceRgb(144, 175, 197);
+
+    // Color palette
+    private static final DeviceRgb PRIMARY_COLOR = new DeviceRgb(41, 128, 185);       // Primary blue
+    private static final DeviceRgb ROW_ALTERNATE_COLOR = new DeviceRgb(245, 245, 245); // Light gray
+    private static final DeviceRgb TOTAL_ROW_COLOR = new DeviceRgb(180, 198, 220);    // Light blue
+    private static final DeviceRgb SUBSECTION_COLOR = new DeviceRgb(52, 73, 94);      // Dark gray
+    private static final DeviceRgb NET_WORTH_COLOR = new DeviceRgb(144, 175, 197);    // Medium blue
+    private static final DeviceRgb BORDER_COLOR = new DeviceRgb(200, 200, 200);       // Border gray
 
     public void exportYearlySummariesToPdf(YearlySummary[] summaries, String filePath) throws IOException {
         exportYearlySummariesToPdf(summaries, null, Path.of(filePath));
@@ -97,11 +109,18 @@ public class PdfExporter {
             }
         }
 
+        // Capture generation timestamp
+        String generationTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy 'at' h:mm a"));
+
         try (PdfWriter writer = new PdfWriter(filePath.toFile());
              PdfDocument pdf = new PdfDocument(writer);
              Document document = new Document(pdf, PageSize.LETTER.rotate())) {
 
-            document.setMargins(20, 20, 20, 20);
+            // Add header/footer handler
+            pdf.addEventHandler(PdfDocumentEvent.END_PAGE, new HeaderFooterEventHandler(generationTime));
+
+            // Margins: top increased for header, bottom increased for footer
+            document.setMargins(45, 30, 40, 30);
 
             // Section 1: Current Inputs and Assumptions (if inputs provided)
             if (inputs != null) {
@@ -136,9 +155,9 @@ public class PdfExporter {
                 }
                 Paragraph title = new Paragraph(titleText)
                         .setFont(boldFont)
-                        .setFontSize(18)
+                        .setFontSize(20)
                         .setTextAlignment(TextAlignment.CENTER)
-                        .setMarginBottom(20);
+                        .setMarginBottom(25);
                 document.add(title);
 
                 // Build table for this page's years
@@ -154,9 +173,9 @@ public class PdfExporter {
         // Title
         Paragraph title = new Paragraph("Current Inputs and Assumptions")
                 .setFont(boldFont)
-                .setFontSize(18)
+                .setFontSize(22)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setMarginBottom(20);
+                .setMarginBottom(25);
         document.add(title);
 
         // Persons Section
@@ -303,9 +322,9 @@ public class PdfExporter {
         // Title
         Paragraph title = new Paragraph("Net Worth Projections")
                 .setFont(boldFont)
-                .setFontSize(18)
+                .setFontSize(22)
                 .setTextAlignment(TextAlignment.CENTER)
-                .setMarginBottom(20);
+                .setMarginBottom(25);
         document.add(title);
 
         // Add the chart first
@@ -340,23 +359,25 @@ public class PdfExporter {
 
         Table table = new Table(UnitValue.createPercentArray(columnWidths));
         table.setWidth(UnitValue.createPercentValue(100));
-        table.setFontSize(9);
+        table.setFontSize(7);  // Same as cash flow table
 
-        // Header row with years
+        // Header row with years (same style as cash flow table)
         Cell headerCell = new Cell()
                 .add(new Paragraph("Item"))
-                .setBackgroundColor(SECTION_HEADER_COLOR)
+                .setBackgroundColor(PRIMARY_COLOR)
                 .setFontColor(ColorConstants.WHITE)
                 .setTextAlignment(TextAlignment.CENTER)
+                .setPadding(6)
                 .setBold();
         table.addHeaderCell(headerCell);
 
         for (YearlySummary summary : projectionYears) {
             Cell yearCell = new Cell()
                     .add(new Paragraph(String.valueOf(summary.year())))
-                    .setBackgroundColor(SECTION_HEADER_COLOR)
+                    .setBackgroundColor(PRIMARY_COLOR)
                     .setFontColor(ColorConstants.WHITE)
                     .setTextAlignment(TextAlignment.CENTER)
+                    .setPadding(6)
                     .setBold();
             table.addHeaderCell(yearCell);
         }
@@ -698,10 +719,10 @@ public class PdfExporter {
         PdfFont boldFont = PdfFontFactory.createFont("Helvetica-Bold");
         Paragraph header = new Paragraph(title)
                 .setFont(boldFont)
-                .setFontSize(12)
-                .setFontColor(SUBSECTION_COLOR)
-                .setMarginTop(10)
-                .setMarginBottom(5);
+                .setFontSize(13)
+                .setFontColor(PRIMARY_COLOR)
+                .setMarginTop(15)
+                .setMarginBottom(8);
         document.add(header);
     }
 
@@ -725,9 +746,10 @@ public class PdfExporter {
         for (String header : headers) {
             Cell cell = new Cell()
                     .add(new Paragraph(header))
-                    .setBackgroundColor(SECTION_HEADER_COLOR)
+                    .setBackgroundColor(PRIMARY_COLOR)
                     .setFontColor(ColorConstants.WHITE)
                     .setTextAlignment(TextAlignment.CENTER)
+                    .setPadding(8)
                     .setBold();
             table.addHeaderCell(cell);
         }
@@ -738,7 +760,8 @@ public class PdfExporter {
         for (String value : values) {
             Cell cell = new Cell()
                     .add(new Paragraph(value))
-                    .setTextAlignment(TextAlignment.LEFT);
+                    .setTextAlignment(TextAlignment.LEFT)
+                    .setPadding(6);
             if (bgColor != null) cell.setBackgroundColor(bgColor);
             table.addCell(cell);
         }
@@ -819,6 +842,7 @@ public class PdfExporter {
     }
 
     // ===== Helper methods for Net Worth Projections section =====
+    // (styled consistently with cash flow table methods)
 
     private void addProjectionSectionHeader(Table table, String sectionName, int columnCount) {
         Cell sectionCell = new Cell(1, columnCount)
@@ -827,7 +851,8 @@ public class PdfExporter {
                 .setFontColor(ColorConstants.WHITE)
                 .setTextAlignment(TextAlignment.LEFT)
                 .setBold()
-                .setPaddingLeft(5);
+                .setPadding(6)
+                .setPaddingLeft(8);
         table.addCell(sectionCell);
     }
 
@@ -838,35 +863,44 @@ public class PdfExporter {
         Cell labelCell = new Cell()
                 .add(new Paragraph(label))
                 .setTextAlignment(TextAlignment.LEFT)
-                .setPaddingLeft(10);
+                .setPadding(4)
+                .setPaddingLeft(12)
+                .setBorder(Border.NO_BORDER);
         if (bgColor != null) labelCell.setBackgroundColor(bgColor);
         table.addCell(labelCell);
 
         for (YearlySummary summary : summaries) {
             Cell valueCell = new Cell()
                     .add(new Paragraph(formatCurrency(valueExtractor.applyAsDouble(summary))))
-                    .setTextAlignment(TextAlignment.RIGHT);
+                    .setTextAlignment(TextAlignment.RIGHT)
+                    .setPadding(4)
+                    .setBorder(Border.NO_BORDER);
             if (bgColor != null) valueCell.setBackgroundColor(bgColor);
             table.addCell(valueCell);
         }
     }
 
     private void addProjectionSummaryRow(Table table, String label, List<YearlySummary> summaries,
-                                          ToDoubleFunction<YearlySummary> valueExtractor) {
+                                          ToDoubleFunction<YearlySummary> valueExtractor) throws IOException {
+        PdfFont boldFont = PdfFontFactory.createFont("Helvetica-Bold");
+
+        // Use darker color for NET WORTH row
+        DeviceRgb bgColor = label.contains("NET WORTH") ? NET_WORTH_COLOR : TOTAL_ROW_COLOR;
+
         Cell labelCell = new Cell()
-                .add(new Paragraph(label))
-                .setBackgroundColor(TOTAL_ROW_COLOR)
+                .add(new Paragraph(label).setFont(boldFont))
+                .setBackgroundColor(bgColor)
                 .setTextAlignment(TextAlignment.LEFT)
-                .setBold()
-                .setPaddingLeft(5);
+                .setPadding(6)
+                .setPaddingLeft(8);
         table.addCell(labelCell);
 
         for (YearlySummary summary : summaries) {
             Cell valueCell = new Cell()
-                    .add(new Paragraph(formatCurrency(valueExtractor.applyAsDouble(summary))))
-                    .setBackgroundColor(TOTAL_ROW_COLOR)
+                    .add(new Paragraph(formatCurrency(valueExtractor.applyAsDouble(summary))).setFont(boldFont))
+                    .setBackgroundColor(bgColor)
                     .setTextAlignment(TextAlignment.RIGHT)
-                    .setBold();
+                    .setPadding(6);
             table.addCell(valueCell);
         }
     }
@@ -876,9 +910,10 @@ public class PdfExporter {
     private void addHeaderRow(Table table, YearlySummary[] summaries) {
         Cell headerCell = new Cell()
                 .add(new Paragraph("Item"))
-                .setBackgroundColor(SECTION_HEADER_COLOR)
+                .setBackgroundColor(PRIMARY_COLOR)
                 .setFontColor(ColorConstants.WHITE)
                 .setTextAlignment(TextAlignment.CENTER)
+                .setPadding(6)
                 .setBold();
         table.addHeaderCell(headerCell);
 
@@ -886,9 +921,10 @@ public class PdfExporter {
             if (summary != null) {
                 Cell yearCell = new Cell()
                         .add(new Paragraph(String.valueOf(summary.year())))
-                        .setBackgroundColor(SECTION_HEADER_COLOR)
+                        .setBackgroundColor(PRIMARY_COLOR)
                         .setFontColor(ColorConstants.WHITE)
                         .setTextAlignment(TextAlignment.CENTER)
+                        .setPadding(6)
                         .setBold();
                 table.addHeaderCell(yearCell);
             }
@@ -902,20 +938,22 @@ public class PdfExporter {
                 .setFontColor(ColorConstants.WHITE)
                 .setTextAlignment(TextAlignment.LEFT)
                 .setBold()
-                .setPaddingLeft(5);
+                .setPadding(6)
+                .setPaddingLeft(8);
         table.addCell(sectionCell);
     }
 
     private void addTotalRow(Table table, String label, YearlySummary[] summaries,
                               ToDoubleFunction<YearlySummary> valueExtractor, int rowNum) throws IOException {
         PdfFont boldFont = PdfFontFactory.createFont("Helvetica-Bold");
-        Border topBorder = new SolidBorder(ColorConstants.GRAY, 0.5f);
+        Border topBorder = new SolidBorder(BORDER_COLOR, 1f);
 
         Cell labelCell = new Cell()
                 .add(new Paragraph(label).setFont(boldFont))
                 .setBackgroundColor(TOTAL_ROW_COLOR)
                 .setTextAlignment(TextAlignment.LEFT)
-                .setPaddingLeft(10)
+                .setPadding(5)
+                .setPaddingLeft(12)
                 .setBorderTop(topBorder)
                 .setBorderBottom(Border.NO_BORDER)
                 .setBorderLeft(Border.NO_BORDER)
@@ -928,6 +966,7 @@ public class PdfExporter {
                         .add(new Paragraph(formatValue(valueExtractor.applyAsDouble(summary))).setFont(boldFont))
                         .setBackgroundColor(TOTAL_ROW_COLOR)
                         .setTextAlignment(TextAlignment.RIGHT)
+                        .setPadding(5)
                         .setBorderTop(topBorder)
                         .setBorderBottom(Border.NO_BORDER)
                         .setBorderLeft(Border.NO_BORDER)
@@ -944,7 +983,8 @@ public class PdfExporter {
         Cell labelCell = new Cell()
                 .add(new Paragraph(label))
                 .setTextAlignment(TextAlignment.LEFT)
-                .setPaddingLeft(10)
+                .setPadding(4)
+                .setPaddingLeft(12)
                 .setBorder(Border.NO_BORDER);
         if (bgColor != null) labelCell.setBackgroundColor(bgColor);
         table.addCell(labelCell);
@@ -954,6 +994,7 @@ public class PdfExporter {
                 Cell valueCell = new Cell()
                         .add(new Paragraph(formatValue(valueExtractor.applyAsDouble(summary))))
                         .setTextAlignment(TextAlignment.RIGHT)
+                        .setPadding(4)
                         .setBorder(Border.NO_BORDER);
                 if (bgColor != null) valueCell.setBackgroundColor(bgColor);
                 table.addCell(valueCell);
@@ -969,6 +1010,7 @@ public class PdfExporter {
         Cell labelCell = new Cell()
                 .add(new Paragraph("  " + label))
                 .setTextAlignment(TextAlignment.LEFT)
+                .setPadding(4)
                 .setPaddingLeft(20)
                 .setBorder(Border.NO_BORDER);
         if (bgColor != null) labelCell.setBackgroundColor(bgColor);
@@ -985,6 +1027,7 @@ public class PdfExporter {
             Cell valueCell = new Cell()
                     .add(new Paragraph(formatValue(value)))
                     .setTextAlignment(TextAlignment.RIGHT)
+                    .setPadding(4)
                     .setBorder(Border.NO_BORDER);
             if (bgColor != null) valueCell.setBackgroundColor(bgColor);
             table.addCell(valueCell);
@@ -997,6 +1040,7 @@ public class PdfExporter {
         Cell labelCell = new Cell()
                 .add(new Paragraph(name + " Age"))
                 .setTextAlignment(TextAlignment.LEFT)
+                .setPadding(4)
                 .setPaddingLeft(10)
                 .setBorder(Border.NO_BORDER);
         if (bgColor != null) labelCell.setBackgroundColor(bgColor);
@@ -1013,6 +1057,7 @@ public class PdfExporter {
             Cell valueCell = new Cell()
                     .add(new Paragraph(ageStr))
                     .setTextAlignment(TextAlignment.RIGHT)
+                    .setPadding(4)
                     .setBorder(Border.NO_BORDER);
             if (bgColor != null) valueCell.setBackgroundColor(bgColor);
             table.addCell(valueCell);
@@ -1030,7 +1075,8 @@ public class PdfExporter {
                 .add(new Paragraph(label).setFont(boldFont))
                 .setBackgroundColor(bgColor)
                 .setTextAlignment(TextAlignment.LEFT)
-                .setPaddingLeft(5);
+                .setPadding(6)
+                .setPaddingLeft(8);
         table.addCell(labelCell);
 
         for (YearlySummary summary : summaries) {
@@ -1038,7 +1084,8 @@ public class PdfExporter {
                 Cell valueCell = new Cell()
                         .add(new Paragraph(formatValue(valueExtractor.applyAsDouble(summary))).setFont(boldFont))
                         .setBackgroundColor(bgColor)
-                        .setTextAlignment(TextAlignment.RIGHT);
+                        .setTextAlignment(TextAlignment.RIGHT)
+                        .setPadding(6);
                 table.addCell(valueCell);
             }
         }
@@ -1049,5 +1096,99 @@ public class PdfExporter {
             return "-";
         }
         return String.format("%,.0f", value);
+    }
+
+    /**
+     * Event handler for adding header and footer to each page.
+     */
+    private static class HeaderFooterEventHandler implements IEventHandler {
+        private final String generationTime;
+
+        public HeaderFooterEventHandler(String generationTime) {
+            this.generationTime = generationTime;
+        }
+
+        @Override
+        public void handleEvent(Event event) {
+            PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
+            PdfDocument pdfDoc = docEvent.getDocument();
+            PdfPage page = docEvent.getPage();
+            int pageNumber = pdfDoc.getPageNumber(page);
+            int totalPages = pdfDoc.getNumberOfPages();
+            Rectangle pageSize = page.getPageSize();
+
+            PdfCanvas pdfCanvas = new PdfCanvas(page.newContentStreamBefore(), page.getResources(), pdfDoc);
+
+            try {
+                PdfFont font = PdfFontFactory.createFont("Helvetica");
+                PdfFont boldFont = PdfFontFactory.createFont("Helvetica-Bold");
+
+                // Header
+                float headerY = pageSize.getTop() - 25;
+                try (Canvas canvas = new Canvas(pdfCanvas, pageSize)) {
+                    // Left side: Report title
+                    canvas.showTextAligned(
+                            new Paragraph("Financial Plan Report")
+                                    .setFont(boldFont)
+                                    .setFontSize(10)
+                                    .setFontColor(PRIMARY_COLOR),
+                            pageSize.getLeft() + 30, headerY, TextAlignment.LEFT);
+
+                    // Right side: Generation time
+                    canvas.showTextAligned(
+                            new Paragraph("Generated: " + generationTime)
+                                    .setFont(font)
+                                    .setFontSize(9)
+                                    .setFontColor(new DeviceRgb(100, 100, 100)),
+                            pageSize.getRight() - 30, headerY, TextAlignment.RIGHT);
+
+                    // Header line
+                    pdfCanvas.setStrokeColor(BORDER_COLOR)
+                            .setLineWidth(0.5f)
+                            .moveTo(pageSize.getLeft() + 30, headerY - 8)
+                            .lineTo(pageSize.getRight() - 30, headerY - 8)
+                            .stroke();
+                }
+
+                // Footer
+                float footerY = pageSize.getBottom() + 25;
+                try (Canvas canvas = new Canvas(pdfCanvas, pageSize)) {
+                    // Footer line
+                    pdfCanvas.setStrokeColor(BORDER_COLOR)
+                            .setLineWidth(0.5f)
+                            .moveTo(pageSize.getLeft() + 30, footerY + 8)
+                            .lineTo(pageSize.getRight() - 30, footerY + 8)
+                            .stroke();
+
+                    // Left side: Confidential notice
+                    canvas.showTextAligned(
+                            new Paragraph("Confidential")
+                                    .setFont(font)
+                                    .setFontSize(8)
+                                    .setFontColor(new DeviceRgb(150, 150, 150))
+                                    .setItalic(),
+                            pageSize.getLeft() + 30, footerY, TextAlignment.LEFT);
+
+                    // Center: Page number
+                    canvas.showTextAligned(
+                            new Paragraph("Page " + pageNumber)
+                                    .setFont(font)
+                                    .setFontSize(9)
+                                    .setFontColor(new DeviceRgb(100, 100, 100)),
+                            (pageSize.getLeft() + pageSize.getRight()) / 2, footerY, TextAlignment.CENTER);
+
+                    // Right side: Generation timestamp (short form)
+                    canvas.showTextAligned(
+                            new Paragraph(generationTime)
+                                    .setFont(font)
+                                    .setFontSize(8)
+                                    .setFontColor(new DeviceRgb(150, 150, 150)),
+                            pageSize.getRight() - 30, footerY, TextAlignment.RIGHT);
+                }
+
+            } catch (IOException e) {
+                // Fallback if font creation fails - just skip header/footer
+            }
+        }
     }
 }

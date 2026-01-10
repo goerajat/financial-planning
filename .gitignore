@@ -61,6 +61,10 @@ Thumbs.db
 
 # Application output
 FinancialPlanner-Out.csv
+FinancialPlanner-Out.pdf
+
+# Node.js (frontend wrapper)
+frontend/node/
 
 # Claude Code
 .claude/

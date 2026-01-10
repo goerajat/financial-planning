@@ -1,0 +1,120 @@
+.intro-tab {
+  max-width: 900px;
+}
+
+.intro-subtitle {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.intro-section {
+  margin-bottom: 30px;
+}
+
+.intro-section h3 {
+  color: #2c3e50;
+  border-bottom: 2px solid #4a90d9;
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+}
+
+.steps-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #4a90d9;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  background: #4a90d9;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.step-content h4 {
+  margin: 0 0 5px 0;
+  color: #333;
+}
+
+.step-content p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.types-grid,
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.type-card,
+.feature-card {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.type-card h4,
+.feature-card h4 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.type-card ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: #555;
+}
+
+.type-card li {
+  margin-bottom: 5px;
+}
+
+.feature-card p {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.tips-section {
+  background: #fff8e6;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #ffe4a0;
+}
+
+.tips-section h3 {
+  border-bottom-color: #f0ad4e;
+}
+
+.tips-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #666;
+}
+
+.tips-list li {
+  margin-bottom: 8px;
+}

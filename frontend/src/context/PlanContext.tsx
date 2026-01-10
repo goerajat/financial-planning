@@ -74,6 +74,7 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
           LIFE_INSURANCE_CONTRIBUTION: 0.0,
           MORTGAGE: 6.5,
           MORTGAGE_REPAYMENT: 0.0,
+          ONE_OFF_PROCEEDS: 0.0,
         });
       }
     };

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { PlanProvider, usePlan } from './context/PlanContext';
+import IntroTab from './components/IntroTab';
 import PersonsTab from './components/PersonsTab';
 import EntriesTab from './components/EntriesTab';
 import RatesTab from './components/RatesTab';
@@ -10,10 +11,10 @@ import RothComparisonTab from './components/RothComparisonTab';
 import StateScenarioTab from './components/StateScenarioTab';
 import './App.css';
 
-type TabName = 'persons' | 'entries' | 'rates' | 'states' | 'results' | 'sensitivity' | 'roth-comparison' | 'state-scenario';
+type TabName = 'intro' | 'persons' | 'entries' | 'rates' | 'states' | 'results' | 'sensitivity' | 'roth-comparison' | 'state-scenario';
 
 const AppContent: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabName>('persons');
+  const [activeTab, setActiveTab] = useState<TabName>('intro');
   const { savePlan, loadPlan, isLoading, statesByYear, addStateByYear, updateStateByYear, deleteStateByYear } = usePlan();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,6 +31,7 @@ const AppContent: React.FC = () => {
   };
 
   const tabs: { id: TabName; label: string }[] = [
+    { id: 'intro', label: 'Getting Started' },
     { id: 'persons', label: 'Persons' },
     { id: 'entries', label: 'Entries' },
     { id: 'rates', label: 'Rates' },
@@ -70,6 +72,7 @@ const AppContent: React.FC = () => {
       </nav>
 
       <main className="main-content">
+        {activeTab === 'intro' && <IntroTab />}
         {activeTab === 'persons' && <PersonsTab />}
         {activeTab === 'entries' && <EntriesTab />}
         {activeTab === 'rates' && <RatesTab />}
