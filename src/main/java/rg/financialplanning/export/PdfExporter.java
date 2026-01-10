@@ -333,6 +333,17 @@ public class PdfExporter {
         chartImage.setMarginBottom(20);
         document.add(chartImage);
 
+        // Page break between chart and table
+        document.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
+
+        // Add table title
+        Paragraph tableTitle = new Paragraph("Net Worth Projections - Summary Table")
+                .setFont(boldFont)
+                .setFontSize(18)
+                .setTextAlignment(TextAlignment.CENTER)
+                .setMarginBottom(20);
+        document.add(tableTitle);
+
         // Build list of years at 5-year intervals for the table
         List<YearlySummary> projectionYears = new ArrayList<>();
         int startYear = summaries[0].year();
@@ -361,7 +372,7 @@ public class PdfExporter {
         table.setWidth(UnitValue.createPercentValue(100));
         table.setFontSize(7);  // Same as cash flow table
 
-        // Header row with years (same style as cash flow table)
+        // Header row with years and offset indicator (same style as cash flow table)
         Cell headerCell = new Cell()
                 .add(new Paragraph("Item"))
                 .setBackgroundColor(PRIMARY_COLOR)
@@ -372,8 +383,10 @@ public class PdfExporter {
         table.addHeaderCell(headerCell);
 
         for (YearlySummary summary : projectionYears) {
+            int yearsOffset = summary.year() - startYear;
+            String headerText = summary.year() + "\n(+" + yearsOffset + " yrs)";
             Cell yearCell = new Cell()
-                    .add(new Paragraph(String.valueOf(summary.year())))
+                    .add(new Paragraph(headerText))
                     .setBackgroundColor(PRIMARY_COLOR)
                     .setFontColor(ColorConstants.WHITE)
                     .setTextAlignment(TextAlignment.CENTER)
@@ -381,6 +394,10 @@ public class PdfExporter {
                     .setBold();
             table.addHeaderCell(yearCell);
         }
+
+        // Net Worth section (moved to top)
+        addProjectionSectionHeader(table, "NET WORTH", columnCount);
+        addProjectionSummaryRow(table, "NET WORTH", projectionYears, YearlySummary::netWorth);
 
         // Assets section
         addProjectionSectionHeader(table, "ASSETS", columnCount);
@@ -397,10 +414,6 @@ public class PdfExporter {
         addProjectionSectionHeader(table, "LIABILITIES", columnCount);
         addProjectionRow(table, "Outstanding Mortgage", projectionYears, YearlySummary::mortgageBalance, rowNum++);
         addProjectionSummaryRow(table, "TOTAL LIABILITIES", projectionYears, YearlySummary::mortgageBalance);
-
-        // Net Worth
-        addProjectionSectionHeader(table, "NET WORTH", columnCount);
-        addProjectionSummaryRow(table, "NET WORTH", projectionYears, YearlySummary::netWorth);
 
         document.add(table);
     }
@@ -530,11 +543,18 @@ public class PdfExporter {
         JFreeChart chart = new JFreeChart(null, JFreeChart.DEFAULT_TITLE_FONT, plot, true);
         chart.setBackgroundPaint(Color.WHITE);
 
-        // Customize legend with larger font
-        chart.getLegend().setItemFont(new Font("SansSerif", Font.BOLD, 16));
+        // Customize legend with larger font and markers
+        chart.getLegend().setItemFont(new Font("SansSerif", Font.BOLD, 20));
         chart.getLegend().setBackgroundPaint(new Color(255, 255, 255, 240));
         chart.getLegend().setFrame(new org.jfree.chart.block.BlockBorder(Color.GRAY));
-        chart.getLegend().setPadding(new org.jfree.chart.ui.RectangleInsets(10, 10, 10, 10));
+        chart.getLegend().setPadding(new org.jfree.chart.ui.RectangleInsets(12, 15, 12, 15));
+
+        // Increase legend marker size
+        org.jfree.chart.LegendItemCollection legendItems = plot.getLegendItems();
+        for (int i = 0; i < legendItems.getItemCount(); i++) {
+            org.jfree.chart.LegendItem item = legendItems.get(i);
+            item.setShapeVisible(true);
+        }
 
         // Create the chart image at higher resolution
         int width = 1800;
