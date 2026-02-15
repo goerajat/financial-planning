@@ -26,6 +26,7 @@ public class IndividualYearlySummary {
     private double qualifiedContributions;
     private double nonQualifiedContributions;
     private double cashWithdrawals;
+    private double oneOffProceeds;
     private double deficit;
 
     public IndividualYearlySummary(Person person, int year, double income,
@@ -48,6 +49,7 @@ public class IndividualYearlySummary {
         this.qualifiedContributions = 0.0;
         this.nonQualifiedContributions = 0.0;
         this.cashWithdrawals = 0.0;
+        this.oneOffProceeds = 0.0;
         this.deficit = 0.0;
     }
 
@@ -196,6 +198,14 @@ public class IndividualYearlySummary {
 
     public void setCashWithdrawals(double cashWithdrawals) {
         this.cashWithdrawals = cashWithdrawals;
+    }
+
+    public double oneOffProceeds() {
+        return oneOffProceeds;
+    }
+
+    public void setOneOffProceeds(double oneOffProceeds) {
+        this.oneOffProceeds = oneOffProceeds;
     }
 
     public double deficit() {

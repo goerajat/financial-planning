@@ -218,6 +218,7 @@ public class FinancialDataProcessor {
             Map<String, Double> socialSecurityByName = new HashMap<>();
             Map<String, Double> rothContributionsByName = new HashMap<>();
             Map<String, Double> qualifiedContributionsByName = new HashMap<>();
+            Map<String, Double> oneOffProceedsByName = new HashMap<>();
 
             for (FinancialEntry entry : entries) {
                 if (entry.isActiveInYear(year)) {
@@ -244,7 +245,10 @@ public class FinancialDataProcessor {
                             qualifiedContributionsByName.merge(name, calculatedValue, Double::sum);
                         }
                         case LIFE_INSURANCE_CONTRIBUTION -> lifeInsuranceContributions += calculatedValue;
-                        case ONE_OFF_PROCEEDS -> oneOffProceeds += calculatedValue;
+                        case ONE_OFF_PROCEEDS -> {
+                            oneOffProceeds += calculatedValue;
+                            oneOffProceedsByName.merge(name, calculatedValue, Double::sum);
+                        }
                         default -> { /* handled below */ }
                     }
                 }
@@ -338,8 +342,9 @@ public class FinancialDataProcessor {
             allNames.addAll(socialSecurityByName.keySet());
             allNames.addAll(rothContributionsByName.keySet());
             allNames.addAll(qualifiedContributionsByName.keySet());
+            allNames.addAll(oneOffProceedsByName.keySet());
 
-            // Step 4: Apply income, social security, and contributions to individuals
+            // Step 4: Apply income, social security, contributions, and one-off proceeds to individuals
             for (String name : allNames) {
                 IndividualYearlySummary individual = getOrCreateIndividual(individualSummaries, name, year, personsByName);
 
@@ -371,6 +376,10 @@ public class FinancialDataProcessor {
                 // Add contributions to asset balances
                 individual.setRothAssets(individual.rothAssets() + rothContrib);
                 individual.setQualifiedAssets(individual.qualifiedAssets() + qualifiedContrib);
+
+                // Apply one-off proceeds
+                double oneOffProceedsForName = oneOffProceedsByName.getOrDefault(name, 0.0);
+                individual.setOneOffProceeds(oneOffProceedsForName);
             }
 
             // Calculate mortgage payment, repayment, and balance
@@ -623,6 +632,10 @@ public class FinancialDataProcessor {
 
             // One-off Proceeds
             writeTotalRow(writer, "Total One-off Proceeds", summaries, YearlySummary::oneOffProceeds);
+            for (String name : allNames) {
+                writeIndividualRow(writer, name + " One-off Proceeds", summaries, name,
+                        ind -> ind.oneOffProceeds());
+            }
 
             // Social Security Benefits
             writeTotalRow(writer, "Total Social Security Benefits", summaries, YearlySummary::totalSocialSecurity);

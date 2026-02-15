@@ -198,11 +198,15 @@ public class PdfExporter {
 
         // Income Section
         List<FinancialEntry> incomeEntries = filterEntriesByType(inputs.entries(), ItemType.INCOME);
-        if (!incomeEntries.isEmpty()) {
+        List<FinancialEntry> oneOffProceedsEntries = filterEntriesByType(inputs.entries(), ItemType.ONE_OFF_PROCEEDS);
+        if (!incomeEntries.isEmpty() || !oneOffProceedsEntries.isEmpty()) {
             addInputSubsectionHeader(document, "Income");
             Table incomeTable = createEntriesTable();
             int rowNum = 0;
             for (FinancialEntry entry : incomeEntries) {
+                addEntryRow(incomeTable, rowNum++, entry);
+            }
+            for (FinancialEntry entry : oneOffProceedsEntries) {
                 addEntryRow(incomeTable, rowNum++, entry);
             }
             document.add(incomeTable);
@@ -642,6 +646,10 @@ public class PdfExporter {
 
         // One-off Proceeds
         addTotalRow(table, "Total One-off Proceeds", summaries, YearlySummary::oneOffProceeds, rowNum++);
+        for (String name : allNames) {
+            addIndividualRow(table, name + " One-off Proceeds", summaries, name,
+                    IndividualYearlySummary::oneOffProceeds, rowNum++);
+        }
 
         // Total Cash Inflows
         addSummaryRow(table, "TOTAL CASH INFLOWS", summaries, YearlySummary::totalCashInflows, columnCount);
