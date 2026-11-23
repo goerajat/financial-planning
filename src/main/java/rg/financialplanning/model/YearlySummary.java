@@ -33,9 +33,15 @@ public class YearlySummary {
     private double socialSecurityTax;
     private double medicareTax;
     private double mortgagePayment;
+    private double mortgageInterest;
+    private double mortgagePrincipal;
     private double mortgageBalance;
     private double mortgageRepayment;
+    private double healthPremiums;
+    private double irmaaSurcharge;
+    private double lookbackMagi;
     private double oneOffProceeds;
+    private double lifeInsuranceCash;
 
     public YearlySummary(int year, double totalIncome, double totalExpenses,
                          double qualifiedAssets, double nonQualifiedAssets,
@@ -69,9 +75,15 @@ public class YearlySummary {
         this.socialSecurityTax = 0.0;
         this.medicareTax = 0.0;
         this.mortgagePayment = 0.0;
+        this.mortgageInterest = 0.0;
+        this.mortgagePrincipal = 0.0;
         this.mortgageBalance = 0.0;
         this.mortgageRepayment = 0.0;
+        this.healthPremiums = 0.0;
+        this.irmaaSurcharge = 0.0;
+        this.lookbackMagi = 0.0;
         this.oneOffProceeds = 0.0;
+        this.lifeInsuranceCash = 0.0;
     }
 
     public int year() {
@@ -265,6 +277,24 @@ public class YearlySummary {
         this.mortgagePayment = mortgagePayment;
     }
 
+    /** Interest part of this year's mortgage payment. */
+    public double mortgageInterest() {
+        return mortgageInterest;
+    }
+
+    public void setMortgageInterest(double mortgageInterest) {
+        this.mortgageInterest = mortgageInterest;
+    }
+
+    /** Principal part of this year's scheduled payment, excluding extra repayments. */
+    public double mortgagePrincipal() {
+        return mortgagePrincipal;
+    }
+
+    public void setMortgagePrincipal(double mortgagePrincipal) {
+        this.mortgagePrincipal = mortgagePrincipal;
+    }
+
     public double mortgageBalance() {
         return mortgageBalance;
     }
@@ -275,6 +305,44 @@ public class YearlySummary {
 
     public double mortgageRepayment() {
         return mortgageRepayment;
+    }
+
+    /** Health premiums for the year: pre-65 cover, Medicare Part B, plan premiums and IRMAA. */
+    public double healthPremiums() {
+        return healthPremiums;
+    }
+
+    public void setHealthPremiums(double healthPremiums) {
+        this.healthPremiums = healthPremiums;
+    }
+
+    /** The IRMAA part of {@link #healthPremiums()}. */
+    public double irmaaSurcharge() {
+        return irmaaSurcharge;
+    }
+
+    public void setIrmaaSurcharge(double irmaaSurcharge) {
+        this.irmaaSurcharge = irmaaSurcharge;
+    }
+
+    /** The MAGI, two years back, that set this year's IRMAA. */
+    public double lookbackMagi() {
+        return lookbackMagi;
+    }
+
+    public void setLookbackMagi(double lookbackMagi) {
+        this.lookbackMagi = lookbackMagi;
+    }
+
+    /**
+     * Modified adjusted gross income as Medicare measures it: wages, RMDs, qualified
+     * withdrawals and conversions, the taxable 85% of Social Security and realised gains,
+     * less pre-tax contributions.
+     */
+    public double modifiedAdjustedGrossIncome() {
+        double gainFactor = 1.0 - rg.financialplanning.calculator.LongTermCapitalGainsCalculator.DEFAULT_COST_BASIS_FACTOR;
+        return totalIncome + rmdWithdrawals + qualifiedWithdrawals + totalSocialSecurity * 0.85
+                + nonQualifiedWithdrawals * gainFactor - qualifiedContributions;
     }
 
     public void setMortgageRepayment(double mortgageRepayment) {
@@ -293,12 +361,20 @@ public class YearlySummary {
         return federalIncomeTax + stateIncomeTax + capitalGainsTax + socialSecurityTax + medicareTax;
     }
 
+    public double lifeInsuranceCash() {
+        return lifeInsuranceCash;
+    }
+
+    public void setLifeInsuranceCash(double lifeInsuranceCash) {
+        this.lifeInsuranceCash = lifeInsuranceCash;
+    }
+
     public double totalWithdrawals() {
         return qualifiedWithdrawals + nonQualifiedWithdrawals + rothWithdrawals;
     }
 
     public double totalAssets() {
-        return qualifiedAssets + nonQualifiedAssets + rothAssets + cash + realEstate + lifeInsuranceBenefits;
+        return qualifiedAssets + nonQualifiedAssets + rothAssets + cash + realEstate + lifeInsuranceBenefits + lifeInsuranceCash;
     }
 
     public double netIncome() {
@@ -466,7 +542,8 @@ public class YearlySummary {
      * Calculates total cash outflows: expenses + taxes + all contributions + mortgage payment + mortgage repayment.
      */
     public double totalCashOutflows() {
-        return totalExpenses + totalTaxes() + rothContributions + qualifiedContributions + nonQualifiedContributions + mortgagePayment + mortgageRepayment;
+        return totalExpenses + totalTaxes() + rothContributions + qualifiedContributions + nonQualifiedContributions
+                + mortgagePayment + mortgageRepayment + healthPremiums;
     }
 
     /**
@@ -518,6 +595,7 @@ public class YearlySummary {
         sb.append(String.format("  Non-Qualified Contributions: %.2f%n", nonQualifiedContributions));
         sb.append(String.format("  Mortgage Payment: %.2f%n", mortgagePayment));
         sb.append(String.format("  Mortgage Repayment: %.2f%n", mortgageRepayment));
+        sb.append(String.format("  Health Premiums: %.2f%n", healthPremiums));
         sb.append(String.format("Deficit: %.2f%n", deficit));
         sb.append(String.format("Difference (should be 0): %.2f%n", difference));
         sb.append(Math.abs(difference) < EPSILON ? "Status: VALID" : "Status: INVALID");
@@ -564,9 +642,14 @@ public class YearlySummary {
                 Double.compare(that.socialSecurityTax, socialSecurityTax) == 0 &&
                 Double.compare(that.medicareTax, medicareTax) == 0 &&
                 Double.compare(that.mortgagePayment, mortgagePayment) == 0 &&
+                Double.compare(that.mortgageInterest, mortgageInterest) == 0 &&
+                Double.compare(that.mortgagePrincipal, mortgagePrincipal) == 0 &&
                 Double.compare(that.mortgageBalance, mortgageBalance) == 0 &&
                 Double.compare(that.mortgageRepayment, mortgageRepayment) == 0 &&
+                Double.compare(that.healthPremiums, healthPremiums) == 0 &&
+                Double.compare(that.irmaaSurcharge, irmaaSurcharge) == 0 &&
                 Double.compare(that.oneOffProceeds, oneOffProceeds) == 0 &&
+                Double.compare(that.lifeInsuranceCash, lifeInsuranceCash) == 0 &&
                 Objects.equals(individualSummaries, that.individualSummaries);
     }
 
@@ -578,7 +661,8 @@ public class YearlySummary {
                 rothWithdrawals, rmdWithdrawals, rothContributions, qualifiedContributions,
                 nonQualifiedContributions, cashWithdrawals, deficit,
                 federalIncomeTax, stateIncomeTax, capitalGainsTax, socialSecurityTax, medicareTax,
-                mortgagePayment, mortgageBalance, mortgageRepayment, oneOffProceeds, individualSummaries);
+                mortgagePayment, mortgageInterest, mortgagePrincipal, mortgageBalance, mortgageRepayment,
+                healthPremiums, irmaaSurcharge, oneOffProceeds, lifeInsuranceCash, individualSummaries);
     }
 
     @Override

@@ -566,4 +566,14 @@ public class YearlySummaryTest {
         YearlySummary emptySummary = new YearlySummary(2025, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, new HashMap<>());
         assertTrue(emptySummary.validateCashFlow());
     }
+
+    @Test
+    public void testLifeInsuranceCash_defaultsToZeroAndCountsInTotalAssets() {
+        assertEquals(0.0, summary.lifeInsuranceCash(), 0.001);
+        double before = summary.totalAssets();
+        summary.setLifeInsuranceCash(75000);
+        assertEquals(75000, summary.lifeInsuranceCash(), 0.001);
+        assertEquals(before + 75000, summary.totalAssets(), 0.001);
+        assertEquals(before + 75000, summary.netWorth(), 0.001);
+    }
 }

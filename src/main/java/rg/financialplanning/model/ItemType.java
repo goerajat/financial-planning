@@ -11,6 +11,7 @@ public enum ItemType {
     ROTH,
     CASH,
     LIFE_INSURANCE_BENEFIT,
+    LIFE_INSURANCE_CASH,
     REAL_ESTATE,
     SOCIAL_SECURITY_BENEFITS,
     ROTH_CONTRIBUTION,
@@ -18,7 +19,9 @@ public enum ItemType {
     LIFE_INSURANCE_CONTRIBUTION,
     MORTGAGE,
     MORTGAGE_REPAYMENT,
-    ONE_OFF_PROCEEDS;
+    ONE_OFF_PROCEEDS,
+    /** Not an entry type: the rate key for medical inflation on computed health premiums. */
+    HEALTH_PREMIUM;
 
     public static ItemType fromString(String value) {
         if (value == null || value.isBlank()) {
@@ -32,6 +35,7 @@ public enum ItemType {
             case "ROTH" -> ROTH;
             case "CASH" -> CASH;
             case "LIFE_INSURANCE_BENEFIT", "LIFE INSURANCE BENEFIT" -> LIFE_INSURANCE_BENEFIT;
+            case "LIFE_INSURANCE_CASH", "LIFE INSURANCE CASH", "CASH_VALUE", "CASH VALUE" -> LIFE_INSURANCE_CASH;
             case "REAL_ESTATE", "REAL ESTATE" -> REAL_ESTATE;
             case "SOCIAL_SECURITY_BENEFITS", "SOCIAL SECURITY BENEFITS", "SOCIAL_SECURITY", "SSA" -> SOCIAL_SECURITY_BENEFITS;
             case "ROTH_CONTRIBUTION", "ROTH CONTRIBUTION" -> ROTH_CONTRIBUTION;

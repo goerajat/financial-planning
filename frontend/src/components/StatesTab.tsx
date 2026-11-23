@@ -155,11 +155,12 @@ const StatesTab: React.FC<StatesTabProps> = ({ statesByYear, onAdd, onUpdate, on
                 const years = state.endYear - state.startYear + 1;
                 return (
                   <tr key={index} className={editingIndex === index ? 'editing' : ''}>
-                    <td>{stateInfo?.label || state.state}</td>
-                    <td>{state.startYear}</td>
-                    <td>{state.endYear}</td>
-                    <td>{years} year{years !== 1 ? 's' : ''}</td>
-                    <td>
+                    <td data-label="State" className="cell-primary">{stateInfo?.label || state.state}</td>
+                    <td data-label="Start year">{state.startYear}</td>
+                    <td data-label="End year">{state.endYear}</td>
+                    <td data-label="Years">{years} year{years !== 1 ? 's' : ''}</td>
+                    <td className="row-actions-cell">
+                      <div className="row-actions">
                       <button
                         onClick={() => handleEdit(index)}
                         className="btn-edit"
@@ -174,6 +175,7 @@ const StatesTab: React.FC<StatesTabProps> = ({ statesByYear, onAdd, onUpdate, on
                       >
                         Delete
                       </button>
+                      </div>
                     </td>
                   </tr>
                 );

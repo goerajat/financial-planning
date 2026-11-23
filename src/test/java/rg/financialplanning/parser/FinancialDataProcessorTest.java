@@ -649,4 +649,29 @@ public class FinancialDataProcessorTest {
         YearlySummary[] summaries = processor.generateYearlySummaries(percentages, persons);
         assertEquals(1, summaries.length);
     }
+
+    @Test
+    public void testGenerateYearlySummaries_lifeInsuranceCashSeedsAndCompounds() throws IOException {
+        File csvFile = tempFolder.newFile("financial.csv");
+        String content = "name,item,description,value,startYear,endYear\n" +
+                "John,INCOME,Salary,100000,2024,2026\n" +
+                "John,LIFE_INSURANCE_CASH,Whole life cash value,100000,2024,2026\n" +
+                "John,LIFE_INSURANCE_CASH,Second policy,50000,2025,2026";
+        Files.writeString(csvFile.toPath(), content);
+
+        processor.loadFromCsv(csvFile.getAbsolutePath());
+
+        Map<ItemType, Double> percentages = new HashMap<>();
+        percentages.put(ItemType.LIFE_INSURANCE_CASH, 4.0);
+
+        Map<String, Person> persons = new HashMap<>();
+        persons.put("John", new Person("John", 1970));
+
+        YearlySummary[] summaries = processor.generateYearlySummaries(percentages, persons);
+
+        assertEquals(100000, summaries[0].lifeInsuranceCash(), 0.01);
+        assertEquals(100000 * 1.04 + 50000, summaries[1].lifeInsuranceCash(), 0.01);
+        assertEquals((100000 * 1.04 + 50000) * 1.04, summaries[2].lifeInsuranceCash(), 0.01);
+        assertEquals(0.0, summaries[2].lifeInsuranceBenefits(), 0.01);
+    }
 }

@@ -11,6 +11,9 @@ public class FinancialEntryDTO {
     private int value;
     private int startYear;
     private int endYear;
+    private String source;
+    /** MORTGAGE only: fixed yearly payment, principal plus interest. */
+    private double annualPayment;
 
     public FinancialEntryDTO() {
     }
@@ -35,6 +38,7 @@ public class FinancialEntryDTO {
                 entry.endYear()
         );
         dto.setId(id);
+        dto.setAnnualPayment(entry.annualPayment());
         return dto;
     }
 
@@ -45,7 +49,7 @@ public class FinancialEntryDTO {
         } catch (IllegalArgumentException e) {
             type = ItemType.fromString(itemType);
         }
-        return new FinancialEntry(personName, type, description, value, startYear, endYear);
+        return new FinancialEntry(personName, type, description, value, startYear, endYear, annualPayment);
     }
 
     public Long getId() {
@@ -100,7 +104,23 @@ public class FinancialEntryDTO {
         return endYear;
     }
 
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
     public void setEndYear(int endYear) {
         this.endYear = endYear;
+    }
+
+    public double getAnnualPayment() {
+        return annualPayment;
+    }
+
+    public void setAnnualPayment(double annualPayment) {
+        this.annualPayment = annualPayment;
     }
 }

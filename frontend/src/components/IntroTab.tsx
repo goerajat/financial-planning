@@ -18,7 +18,7 @@ const IntroTab: React.FC = () => {
             <div className="step-number">1</div>
             <div className="step-content">
               <h4>Add Persons</h4>
-              <p>Start by adding yourself and any family members. Enter names, birth years, and self-employment status.</p>
+              <p>Start by adding yourself and your spouse: name, year of birth, the Social Security benefit from the SSA statement and the age to claim it, and health premiums before and after Medicare.</p>
             </div>
           </div>
 

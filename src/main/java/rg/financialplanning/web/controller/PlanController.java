@@ -15,19 +15,59 @@ import rg.financialplanning.web.dto.StateScenarioRequestDTO;
 import rg.financialplanning.web.dto.StateScenarioResponseDTO;
 import rg.financialplanning.web.dto.ScenarioPdfRequestDTO;
 import rg.financialplanning.web.service.FinancialPlanService;
+import rg.financialplanning.web.aggregator.AggregatorException;
+import rg.financialplanning.web.aggregator.BalanceRefreshService;
+import rg.financialplanning.web.dto.RefreshBalancesResponseDTO;
+import rg.financialplanning.web.dto.YearlySummaryDTO;
+import rg.financialplanning.web.dto.RefreshRunDTO;
+import rg.financialplanning.web.db.PlanRepository;
+import rg.financialplanning.web.db.RefreshHistoryRepository;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/plan")
 public class PlanController {
 
     private final FinancialPlanService planService;
+    private final BalanceRefreshService balanceRefreshService;
+    private final PlanRepository planRepository;
+    private final RefreshHistoryRepository history;
 
-    public PlanController(FinancialPlanService planService) {
+    public PlanController(FinancialPlanService planService, BalanceRefreshService balanceRefreshService,
+                          PlanRepository planRepository, RefreshHistoryRepository history) {
         this.planService = planService;
+        this.balanceRefreshService = balanceRefreshService;
+        this.planRepository = planRepository;
+        this.history = history;
+    }
+
+    /** The stored plan; empty until something is saved. */
+    @GetMapping
+    public ResponseEntity<FinancialPlanDTO> getPlan() {
+        return ResponseEntity.ok(planRepository.load());
+    }
+
+    /** Replaces the stored plan. Entry ids are kept as sent; missing ones are assigned. */
+    @PutMapping
+    public ResponseEntity<FinancialPlanDTO> putPlan(@RequestBody FinancialPlanDTO planData) {
+        planRepository.save(planData);
+        return ResponseEntity.ok(planData);
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<List<RefreshRunDTO>> history() {
+        return ResponseEntity.ok(history.runs());
+    }
+
+    @GetMapping("/history/{id}")
+    public ResponseEntity<RefreshRunDTO> historyRun(@PathVariable("id") long id) {
+        RefreshRunDTO run = history.run(id);
+        return run == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(run);
     }
 
     @PostMapping("/generate")
@@ -60,6 +100,7 @@ public class PlanController {
     public ResponseEntity<FinancialPlanDTO> importFromJson(@RequestBody String json) {
         try {
             FinancialPlanDTO planData = planService.importFromJson(json);
+            planRepository.save(planData);
             return ResponseEntity.ok(planData);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -71,9 +112,27 @@ public class PlanController {
         try {
             String json = new String(file.getBytes(), StandardCharsets.UTF_8);
             FinancialPlanDTO planData = planService.importFromJson(json);
+            planRepository.save(planData);
             return ResponseEntity.ok(planData);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/summary")
+    public ResponseEntity<List<YearlySummaryDTO>> summary(@RequestBody FinancialPlanDTO planData) {
+        return ResponseEntity.ok(planService.generateSummaries(planData));
+    }
+
+    @PostMapping("/refresh-balances")
+    public ResponseEntity<?> refreshBalances(@RequestBody FinancialPlanDTO planData) {
+        try {
+            RefreshBalancesResponseDTO result = balanceRefreshService.refresh(planData);
+            planRepository.save(result.plan);
+            history.record(result.report, planService.generateSummaries(result.plan), Instant.now());
+            return ResponseEntity.ok(result);
+        } catch (AggregatorException e) {
+            return ResponseEntity.status(502).body(Map.of("error", e.getMessage()));
         }
     }
 

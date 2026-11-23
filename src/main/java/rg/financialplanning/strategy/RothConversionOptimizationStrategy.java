@@ -1,6 +1,8 @@
 package rg.financialplanning.strategy;
 
 import rg.financialplanning.calculator.FederalTaxCalculator;
+import rg.financialplanning.calculator.LongTermCapitalGainsCalculator;
+import rg.financialplanning.calculator.MedicarePremiumCalculator;
 import rg.financialplanning.calculator.NJStateTaxCalculator;
 import rg.financialplanning.model.FilingStatus;
 import rg.financialplanning.model.IndividualYearlySummary;
@@ -109,6 +111,9 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
 
         // Calculate room in the target bracket based on combined income
         double roomInBracket = targetBracketThreshold - combinedTaxableIncome;
+        // From the year anyone is 63, this year's MAGI sets a Medicare premium two years
+        // on, so a conversion stops short of the next IRMAA tier.
+        roomInBracket = Math.min(roomInBracket, irmaaRoom(currentYearlySummary, combinedTaxableIncome));
 
         if (roomInBracket <= 0) {
             // Already at or above target bracket, no conversion recommended
@@ -155,6 +160,26 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
      * @param summary the yearly summary containing all individuals
      * @return the combined taxable income
      */
+    /** Dollars left under the next IRMAA threshold, or no limit when nobody is within two years of Medicare. */
+    static final double IRMAA_MARGIN = 1_000;
+
+    private double irmaaRoom(YearlySummary summary, double taxableIncome) {
+        int year = summary.year();
+        int watchAge = MedicarePremiumCalculator.ELIGIBILITY_AGE - MedicarePremiumCalculator.LOOKBACK_YEARS;
+        boolean nearMedicare = summary.individualSummaries().values().stream()
+                .anyMatch(ind -> ind.person() != null && ind.person().getAgeInYear(year) >= watchAge);
+        if (!nearMedicare) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double gains = summary.individualSummaries().values().stream()
+                .mapToDouble(IndividualYearlySummary::nonQualifiedWithdrawals).sum()
+                * (1.0 - LongTermCapitalGainsCalculator.DEFAULT_COST_BASIS_FACTOR);
+        double magi = taxableIncome + gains;
+        double next = MedicarePremiumCalculator.nextThresholdAbove(magi,
+                year + MedicarePremiumCalculator.LOOKBACK_YEARS, filingStatus);
+        return Math.max(0, next - IRMAA_MARGIN - magi);
+    }
+
     private double calculateCombinedTaxableIncome(YearlySummary summary) {
         double combinedIncome = 0.0;
 

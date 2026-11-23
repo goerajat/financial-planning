@@ -10,7 +10,7 @@ import rg.financialplanning.model.ItemType;
 import rg.financialplanning.model.Person;
 import rg.financialplanning.model.YearlySummary;
 import rg.financialplanning.parser.FinancialDataProcessor;
-import rg.financialplanning.ui.model.SaveData;
+import rg.financialplanning.web.dto.SaveData;
 import rg.financialplanning.web.dto.FinancialEntryDTO;
 import rg.financialplanning.web.dto.FinancialPlanDTO;
 import rg.financialplanning.web.dto.PersonDTO;
@@ -40,6 +40,7 @@ import rg.financialplanning.strategy.RothConversionOptimizationStrategy;
 import rg.financialplanning.strategy.TaxCalculationStrategy;
 import rg.financialplanning.web.dto.StateByYearDTO;
 import rg.financialplanning.web.dto.ScenarioPdfRequestDTO;
+import rg.financialplanning.web.dto.YearlySummaryDTO;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -64,18 +65,36 @@ public class FinancialPlanService {
         DEFAULT_RATES.put(ItemType.CASH, 2.0);
         DEFAULT_RATES.put(ItemType.REAL_ESTATE, 3.0);
         DEFAULT_RATES.put(ItemType.LIFE_INSURANCE_BENEFIT, 0.0);
+        DEFAULT_RATES.put(ItemType.LIFE_INSURANCE_CASH, 4.0);
         DEFAULT_RATES.put(ItemType.SOCIAL_SECURITY_BENEFITS, 2.0);
         DEFAULT_RATES.put(ItemType.ROTH_CONTRIBUTION, 0.0);
         DEFAULT_RATES.put(ItemType.QUALIFIED_CONTRIBUTION, 0.0);
         DEFAULT_RATES.put(ItemType.LIFE_INSURANCE_CONTRIBUTION, 0.0);
         DEFAULT_RATES.put(ItemType.MORTGAGE, 6.5);
         DEFAULT_RATES.put(ItemType.MORTGAGE_REPAYMENT, 0.0);
+        DEFAULT_RATES.put(ItemType.HEALTH_PREMIUM, 5.5);
     }
 
     public List<RateDTO> getDefaultRates() {
         return DEFAULT_RATES.entrySet().stream()
                 .map(entry -> RateDTO.fromItemType(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
+    }
+
+    /** The yearly projection as JSON rows, for the results table (the PDF carries the full report). */
+    public List<YearlySummaryDTO> generateSummaries(FinancialPlanDTO planData) {
+        List<FinancialEntry> entries = planData.getEntries().stream()
+                .map(FinancialEntryDTO::toEntry)
+                .collect(Collectors.toList());
+        Map<String, Person> personsByName = planData.getPersons().stream()
+                .map(PersonDTO::toPerson)
+                .collect(Collectors.toMap(Person::name, p -> p, (a, b) -> a));
+        Map<ItemType, Double> rates = convertRates(planData.getRates());
+
+        FinancialDataProcessor processor = new FinancialDataProcessor();
+        processor.setEntries(entries);
+        YearlySummary[] summaries = processor.generateYearlySummaries(rates, personsByName);
+        return Arrays.stream(summaries).map(YearlySummaryDTO::from).collect(Collectors.toList());
     }
 
     public byte[] generatePdf(FinancialPlanDTO planData) throws IOException {
@@ -273,24 +292,38 @@ public class FinancialPlanService {
 
         // Convert persons
         List<SaveData.PersonData> personDataList = planData.getPersons().stream()
-                .map(p -> new SaveData.PersonData(p.getName(), p.getYearOfBirth()))
+                .map(p -> {
+                    SaveData.PersonData d = new SaveData.PersonData(p.getName(), p.getYearOfBirth(), p.isSelfEmployed());
+                    d.setSocialSecurityFraMonthly(p.getSocialSecurityFraMonthly());
+                    d.setSocialSecurityClaimAge(p.getSocialSecurityClaimAge());
+                    d.setPreMedicarePremiumMonthly(p.getPreMedicarePremiumMonthly());
+                    d.setMedicarePlanPremiumMonthly(p.getMedicarePlanPremiumMonthly());
+                    return d;
+                })
                 .collect(Collectors.toList());
         saveData.setPersons(personDataList);
 
         // Convert entries
         List<SaveData.EntryData> entryDataList = planData.getEntries().stream()
-                .map(e -> new SaveData.EntryData(
-                        e.getPersonName(),
-                        e.getItemType(),
-                        e.getDescription(),
-                        e.getValue(),
-                        e.getStartYear(),
-                        e.getEndYear()))
+                .map(e -> {
+                    SaveData.EntryData d = new SaveData.EntryData(
+                            e.getPersonName(), e.getItemType(), e.getDescription(),
+                            e.getValue(), e.getStartYear(), e.getEndYear());
+                    d.setSource(e.getSource());
+                    d.setAnnualPayment(e.getAnnualPayment());
+                    return d;
+                })
                 .collect(Collectors.toList());
         saveData.setEntries(entryDataList);
 
         // Convert rates
         saveData.setRates(new HashMap<>(planData.getRates()));
+
+        if (planData.getStatesByYear() != null) {
+            saveData.setStatesByYear(planData.getStatesByYear().stream()
+                    .map(s -> new SaveData.StateByYearData(s.getState(), s.getStartYear(), s.getEndYear()))
+                    .collect(Collectors.toList()));
+        }
 
         return saveData;
     }
@@ -301,7 +334,14 @@ public class FinancialPlanService {
         // Convert persons
         if (saveData.getPersons() != null) {
             List<PersonDTO> persons = saveData.getPersons().stream()
-                    .map(p -> new PersonDTO(p.getName(), p.getYearOfBirth()))
+                    .map(p -> {
+                        PersonDTO d = new PersonDTO(p.getName(), p.getYearOfBirth(), p.isSelfEmployed());
+                        d.setSocialSecurityFraMonthly(p.getSocialSecurityFraMonthly());
+                        d.setSocialSecurityClaimAge(p.getSocialSecurityClaimAge());
+                        d.setPreMedicarePremiumMonthly(p.getPreMedicarePremiumMonthly());
+                        d.setMedicarePlanPremiumMonthly(p.getMedicarePlanPremiumMonthly());
+                        return d;
+                    })
                     .collect(Collectors.toList());
             dto.setPersons(persons);
         }
@@ -319,6 +359,8 @@ public class FinancialPlanService {
                         e.getStartYear(),
                         e.getEndYear());
                 entryDTO.setId(id++);
+                entryDTO.setSource(e.getSource());
+                entryDTO.setAnnualPayment(e.getAnnualPayment());
                 entries.add(entryDTO);
             }
             dto.setEntries(entries);
@@ -327,6 +369,12 @@ public class FinancialPlanService {
         // Convert rates
         if (saveData.getRates() != null) {
             dto.setRates(new HashMap<>(saveData.getRates()));
+        }
+
+        if (saveData.getStatesByYear() != null) {
+            dto.setStatesByYear(saveData.getStatesByYear().stream()
+                    .map(s -> new StateByYearDTO(s.getState(), s.getStartYear(), s.getEndYear()))
+                    .collect(Collectors.toList()));
         }
 
         return dto;

@@ -8,6 +8,10 @@ public class PersonDTO {
     private int yearOfBirth;
     private Integer currentAge;
     private boolean selfEmployed;
+    private double socialSecurityFraMonthly;
+    private int socialSecurityClaimAge;
+    private double preMedicarePremiumMonthly;
+    private double medicarePlanPremiumMonthly;
 
     public PersonDTO() {
     }
@@ -24,11 +28,49 @@ public class PersonDTO {
     }
 
     public static PersonDTO fromPerson(Person person) {
-        return new PersonDTO(person.name(), person.yearOfBirth(), person.isSelfEmployed());
+        PersonDTO dto = new PersonDTO(person.name(), person.yearOfBirth(), person.isSelfEmployed());
+        dto.socialSecurityFraMonthly = person.socialSecurityFraMonthly();
+        dto.socialSecurityClaimAge = person.socialSecurityClaimAge();
+        dto.preMedicarePremiumMonthly = person.preMedicarePremiumMonthly();
+        dto.medicarePlanPremiumMonthly = person.medicarePlanPremiumMonthly();
+        return dto;
     }
 
     public Person toPerson() {
-        return new Person(name, yearOfBirth, selfEmployed);
+        return new Person(name, yearOfBirth, selfEmployed, socialSecurityFraMonthly, socialSecurityClaimAge,
+                preMedicarePremiumMonthly, medicarePlanPremiumMonthly);
+    }
+
+    public double getSocialSecurityFraMonthly() {
+        return socialSecurityFraMonthly;
+    }
+
+    public void setSocialSecurityFraMonthly(double socialSecurityFraMonthly) {
+        this.socialSecurityFraMonthly = socialSecurityFraMonthly;
+    }
+
+    public int getSocialSecurityClaimAge() {
+        return socialSecurityClaimAge;
+    }
+
+    public void setSocialSecurityClaimAge(int socialSecurityClaimAge) {
+        this.socialSecurityClaimAge = socialSecurityClaimAge;
+    }
+
+    public double getPreMedicarePremiumMonthly() {
+        return preMedicarePremiumMonthly;
+    }
+
+    public void setPreMedicarePremiumMonthly(double preMedicarePremiumMonthly) {
+        this.preMedicarePremiumMonthly = preMedicarePremiumMonthly;
+    }
+
+    public double getMedicarePlanPremiumMonthly() {
+        return medicarePlanPremiumMonthly;
+    }
+
+    public void setMedicarePlanPremiumMonthly(double medicarePlanPremiumMonthly) {
+        this.medicarePlanPremiumMonthly = medicarePlanPremiumMonthly;
     }
 
     public String getName() {

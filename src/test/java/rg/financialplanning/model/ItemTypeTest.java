@@ -46,6 +46,9 @@ public class ItemTypeTest {
     public void testFromString_lifeInsuranceBenefit() {
         assertEquals(ItemType.LIFE_INSURANCE_BENEFIT, ItemType.fromString("LIFE_INSURANCE_BENEFIT"));
         assertEquals(ItemType.LIFE_INSURANCE_BENEFIT, ItemType.fromString("LIFE INSURANCE BENEFIT"));
+        assertEquals(ItemType.LIFE_INSURANCE_CASH, ItemType.fromString("LIFE_INSURANCE_CASH"));
+        assertEquals(ItemType.LIFE_INSURANCE_CASH, ItemType.fromString("life insurance cash"));
+        assertEquals(ItemType.LIFE_INSURANCE_CASH, ItemType.fromString("CASH_VALUE"));
     }
 
     @Test

@@ -2,6 +2,8 @@ package rg.financialplanning.model;
 
 /**
  * Record representing a single financial entry from the CSV file.
+ * {@code annualPayment} is only meaningful for {@link ItemType#MORTGAGE}: the
+ * fixed yearly payment (principal plus interest) on a balance of {@code value}.
  */
 public record FinancialEntry(
     String name,
@@ -9,7 +11,8 @@ public record FinancialEntry(
     String description,
     int value,
     int startYear,
-    int endYear
+    int endYear,
+    double annualPayment
 ) {
     public FinancialEntry {
         if (startYear > endYear) {
@@ -18,6 +21,13 @@ public record FinancialEntry(
         if (value < 0) {
             throw new IllegalArgumentException("Value cannot be negative");
         }
+        if (annualPayment < 0) {
+            throw new IllegalArgumentException("Annual payment cannot be negative");
+        }
+    }
+
+    public FinancialEntry(String name, ItemType item, String description, int value, int startYear, int endYear) {
+        this(name, item, description, value, startYear, endYear, 0);
     }
 
     public boolean isActiveInYear(int year) {

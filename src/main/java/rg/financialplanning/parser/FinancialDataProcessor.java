@@ -1,6 +1,9 @@
 package rg.financialplanning.parser;
 
+import rg.financialplanning.calculator.MedicarePremiumCalculator;
 import rg.financialplanning.calculator.MortgageCalculator;
+import rg.financialplanning.calculator.SocialSecurityCalculator;
+import rg.financialplanning.model.FilingStatus;
 import rg.financialplanning.model.FinancialEntry;
 import rg.financialplanning.model.IndividualYearlySummary;
 import rg.financialplanning.model.ItemType;
@@ -254,6 +257,20 @@ public class FinancialDataProcessor {
                 }
             }
 
+            // Social Security from each person's benefit at full retirement age and claiming age,
+            // quoted in first-year dollars and grown by COLA from the plan's first year.
+            if (personsByName != null && !personsByName.isEmpty()) {
+                double cola = Math.pow(1 + percentageRates.getOrDefault(ItemType.SOCIAL_SECURITY_BENEFITS, 0.0) / 100.0,
+                        year - earliestStartYear);
+                for (Person person : personsByName.values()) {
+                    double benefit = computedSocialSecurity(person, personsByName.values(), year) * cola;
+                    if (benefit > 0) {
+                        totalSocialSecurity += benefit;
+                        socialSecurityByName.merge(person.name(), benefit, Double::sum);
+                    }
+                }
+            }
+
             // Other item types: Compound from previous year + add new entries (new behavior)
             double qualifiedAssets = applyPercentageIncrease(previousSummary != null ? previousSummary.qualifiedAssets() : 0,
                     percentageRates.getOrDefault(ItemType.QUALIFIED, 0.0));
@@ -273,6 +290,8 @@ public class FinancialDataProcessor {
                     percentageRates.getOrDefault(ItemType.LIFE_INSURANCE_BENEFIT, 0.0));
             // Add life insurance contributions to the balance
             lifeInsuranceBenefits += lifeInsuranceContributions;
+            double lifeInsuranceCash = applyPercentageIncrease(previousSummary != null ? previousSummary.lifeInsuranceCash() : 0,
+                    percentageRates.getOrDefault(ItemType.LIFE_INSURANCE_CASH, 0.0));
 
             // Build individual summaries by carrying forward from previous year and applying percentage increases
             Map<String, IndividualYearlySummary> individualSummaries = new HashMap<>();
@@ -331,6 +350,7 @@ public class FinancialDataProcessor {
                         case CASH -> cash += baseValue;
                         case REAL_ESTATE -> realEstate += baseValue;
                         case LIFE_INSURANCE_BENEFIT -> lifeInsuranceBenefits += baseValue;
+                        case LIFE_INSURANCE_CASH -> lifeInsuranceCash += baseValue;
                         default -> { /* Income/Expense/Social Security handled above */ }
                     }
                 }
@@ -382,60 +402,48 @@ public class FinancialDataProcessor {
                 individual.setOneOffProceeds(oneOffProceedsForName);
             }
 
-            // Calculate mortgage payment, repayment, and balance
-            // Input: value = outstanding mortgage amount, description = fixed annual payment
-            // Interest rate from percentages CSV, balance tracked year-over-year
+            // Mortgage: value = outstanding balance, annualPayment = fixed yearly payment,
+            // interest from the MORTGAGE rate, balance tracked year over year.
             double mortgagePayment = 0;
+            double mortgageInterest = 0;
+            double mortgagePrincipal = 0;
             double mortgageBalance = 0;
             double mortgageRepayment = 0;
             MortgageCalculator mortgageCalculator = new MortgageCalculator();
 
-            // First, calculate any mortgage repayments (extra principal payments) for this year
+            double extraScheduled = 0;
             for (FinancialEntry entry : entries) {
                 if (entry.item() == ItemType.MORTGAGE_REPAYMENT && entry.isActiveInYear(year)) {
-                    double repaymentValue = entry.getValueForYear(year,
+                    extraScheduled += entry.getValueForYear(year,
                             percentageRates.getOrDefault(ItemType.MORTGAGE_REPAYMENT, 0.0));
-                    mortgageRepayment += repaymentValue;
                 }
             }
 
-            // Then process the mortgage itself
             for (FinancialEntry entry : entries) {
                 if (entry.item() == ItemType.MORTGAGE && entry.isActiveInYear(year)) {
                     double interestRate = percentageRates.getOrDefault(ItemType.MORTGAGE, 0.0);
 
-                    // Parse fixed annual payment from description
-                    double fixedAnnualPayment = 0;
-                    if (entry.description() != null && !entry.description().isBlank()) {
-                        try {
-                            fixedAnnualPayment = Double.parseDouble(entry.description().trim());
-                        } catch (NumberFormatException e) {
-                            // If description is not a number, default to 0
-                        }
-                    }
-
-                    // Get the starting balance (from entry value) or previous year's balance
                     double startingBalance;
                     if (year == entry.startYear()) {
-                        // First year - use the initial outstanding amount from entry
                         startingBalance = entry.value();
                     } else if (previousSummary != null) {
-                        // Subsequent years - use previous year's ending balance
                         startingBalance = previousSummary.mortgageBalance();
                     } else {
                         startingBalance = entry.value();
                     }
 
-                    // Calculate interest for this year
-                    double interestPortion = mortgageCalculator.calculateInterestPortion(startingBalance, interestRate);
+                    double interest = mortgageCalculator.calculateInterestPortion(startingBalance, interestRate);
+                    // Extra principal cannot exceed what is owed; the scheduled payment
+                    // covers interest first and the last year pays only what is left.
+                    double extra = Math.min(extraScheduled, startingBalance);
+                    double owedAfterExtra = startingBalance - extra;
+                    double principal = Math.min(entry.annualPayment() - interest, owedAfterExtra);
+                    double endingBalance = Math.max(0, owedAfterExtra - principal);
 
-                    // Principal paid = payment - interest
-                    double principalPortion = fixedAnnualPayment - interestPortion;
-
-                    // New balance = old balance - principal paid - extra repayment (don't go below 0)
-                    double endingBalance = Math.max(0, startingBalance - principalPortion - mortgageRepayment);
-
-                    mortgagePayment += fixedAnnualPayment;
+                    mortgageInterest += interest;
+                    mortgagePrincipal += principal;
+                    mortgagePayment += interest + principal;
+                    mortgageRepayment += extra;
                     mortgageBalance = endingBalance;
                 }
             }
@@ -446,11 +454,44 @@ public class FinancialDataProcessor {
 
             // Set mortgage payment, repayment, and balance
             summaries[i].setMortgagePayment(mortgagePayment);
+            summaries[i].setMortgageInterest(mortgageInterest);
+            summaries[i].setMortgagePrincipal(mortgagePrincipal);
             summaries[i].setMortgageBalance(mortgageBalance);
             summaries[i].setMortgageRepayment(mortgageRepayment);
+            summaries[i].setLifeInsuranceCash(lifeInsuranceCash);
 
             // Set one-off proceeds
             summaries[i].setOneOffProceeds(oneOffProceeds);
+
+            // Health premiums: cover before 65 in years without wages, Medicare from 65 with IRMAA
+            // set by the MAGI of two years earlier. Set before the strategies so the expense
+            // strategy funds them like any other outflow.
+            if (personsByName != null && !personsByName.isEmpty()) {
+                FilingStatus irmaaStatus = personsByName.size() >= 2 ? FilingStatus.MARRIED_FILING_JOINTLY : FilingStatus.SINGLE;
+                double medicalInflation = percentageRates.getOrDefault(ItemType.HEALTH_PREMIUM, 0.0);
+                double userGrowth = Math.pow(1 + medicalInflation / 100.0, year - earliestStartYear);
+                YearlySummary lookback = i >= MedicarePremiumCalculator.LOOKBACK_YEARS
+                        ? summaries[i - MedicarePremiumCalculator.LOOKBACK_YEARS] : null;
+                // Without two years of history the current year's income stands in for the lookback.
+                double lookbackMagi = lookback != null ? lookback.modifiedAdjustedGrossIncome()
+                        : totalIncome + totalSocialSecurity * 0.85;
+                double premiums = 0;
+                double irmaa = 0;
+                for (Person person : personsByName.values()) {
+                    if (person.getAgeInYear(year) >= MedicarePremiumCalculator.ELIGIBILITY_AGE) {
+                        premiums += MedicarePremiumCalculator.annualPartB(year, medicalInflation)
+                                + person.medicarePlanPremiumMonthly() * 12 * userGrowth;
+                        double surcharge = MedicarePremiumCalculator.annualSurcharge(lookbackMagi, year, irmaaStatus, medicalInflation);
+                        premiums += surcharge;
+                        irmaa += surcharge;
+                    } else if (totalIncome == 0 && person.preMedicarePremiumMonthly() > 0) {
+                        premiums += person.preMedicarePremiumMonthly() * 12 * userGrowth;
+                    }
+                }
+                summaries[i].setHealthPremiums(premiums);
+                summaries[i].setIrmaaSurcharge(irmaa);
+                summaries[i].setLookbackMagi(lookbackMagi);
+            }
 
             // Apply tax optimization strategy after creating the summary
             if (taxOptimizationStrategy != null) {
@@ -477,6 +518,29 @@ public class FinancialDataProcessor {
      * @param personsByName map of name to Person
      * @return the existing or newly created IndividualYearlySummary
      */
+    /**
+     * A person's own Social Security benefit, or the spousal benefit on another
+     * household member's record if that is larger and that member has claimed.
+     * In the dollars the benefits were quoted in; zero before the claiming age.
+     */
+    static double computedSocialSecurity(Person person, java.util.Collection<Person> household, int year) {
+        int claimAge = person.socialSecurityClaimAgeOrFra();
+        if (person.getAgeInYear(year) < claimAge) {
+            return 0;
+        }
+        double best = person.socialSecurityFraMonthly() > 0
+                ? SocialSecurityCalculator.annualOwnBenefit(person.socialSecurityFraMonthly(), person.yearOfBirth(), claimAge)
+                : 0;
+        for (Person worker : household) {
+            if (worker == person || worker.socialSecurityFraMonthly() <= 0) continue;
+            if (worker.getAgeInYear(year) < worker.socialSecurityClaimAgeOrFra()) continue;
+            double spousal = SocialSecurityCalculator.annualSpousalBenefit(worker.socialSecurityFraMonthly(),
+                    person.yearOfBirth(), claimAge);
+            best = Math.max(best, spousal);
+        }
+        return best;
+    }
+
     private IndividualYearlySummary getOrCreateIndividual(Map<String, IndividualYearlySummary> individualSummaries,
                                                           String name, int year, Map<String, Person> personsByName) {
         return individualSummaries.computeIfAbsent(name, n -> {
@@ -680,7 +744,11 @@ public class FinancialDataProcessor {
 
             // Mortgage Payments
             writeTotalRow(writer, "Mortgage Payment", summaries, YearlySummary::mortgagePayment);
+            writeTotalRow(writer, "  Mortgage Interest", summaries, YearlySummary::mortgageInterest);
+            writeTotalRow(writer, "  Mortgage Principal", summaries, YearlySummary::mortgagePrincipal);
             writeTotalRow(writer, "Mortgage Repayment (Extra Principal)", summaries, YearlySummary::mortgageRepayment);
+            writeTotalRow(writer, "Health Premiums", summaries, YearlySummary::healthPremiums);
+            writeTotalRow(writer, "  of which IRMAA", summaries, YearlySummary::irmaaSurcharge);
 
             writeTotalRow(writer, "TOTAL CASH OUTFLOWS", summaries, YearlySummary::totalCashOutflows);
 
@@ -711,6 +779,7 @@ public class FinancialDataProcessor {
             writeTotalRow(writer, "Total Cash", summaries, YearlySummary::cash);
             writeTotalRow(writer, "Total Real Estate", summaries, YearlySummary::realEstate);
             writeTotalRow(writer, "Total Life Insurance Benefits", summaries, YearlySummary::lifeInsuranceBenefits);
+            writeTotalRow(writer, "Total Life Insurance Cash Value", summaries, YearlySummary::lifeInsuranceCash);
 
             writeTotalRow(writer, "TOTAL ASSETS", summaries, YearlySummary::totalAssets);
 

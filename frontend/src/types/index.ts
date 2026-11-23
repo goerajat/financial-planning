@@ -3,6 +3,14 @@ export interface Person {
   yearOfBirth: number;
   currentAge?: number;
   selfEmployed?: boolean;
+  /** Benefit at full retirement age, per month, today's dollars. 0 = no record of their own. */
+  socialSecurityFraMonthly?: number;
+  /** Whole-year claiming age 62..70; 0 = full retirement age. */
+  socialSecurityClaimAge?: number;
+  /** Health cover before 65, per month, charged in years without wages. */
+  preMedicarePremiumMonthly?: number;
+  /** Medicare supplement plus Part D plan, per month. */
+  medicarePlanPremiumMonthly?: number;
 }
 
 export interface FinancialEntry {
@@ -13,6 +21,9 @@ export interface FinancialEntry {
   value: number;
   startYear: number;
   endYear: number;
+  source?: string;
+  /** MORTGAGE only: fixed yearly payment, principal plus interest. */
+  annualPayment?: number;
 }
 
 export interface RateConfig {
@@ -43,6 +54,35 @@ export interface FinancialPlan {
   statesByYear?: StateByYear[];
 }
 
+export type PlanTier = 'SILVER' | 'GOLD';
+
+/** A person's latest premium research run; figures are set only when status is DONE. */
+export interface HealthPremiumEstimate {
+  personName: string;
+  status: 'NONE' | 'RUNNING' | 'DONE' | 'ERROR';
+  planTier: PlanTier | null;
+  requestedAt: string | null;
+  completedAt: string | null;
+  durationMs: number;
+  state: string | null;
+  stateName: string | null;
+  gapStart: number;
+  gapEnd: number;
+  medicareYear: number;
+  preMedicarePremiumMonthly: number;
+  medicarePlanPremiumMonthly: number;
+  medicalInflationPct: number;
+  notes: string | null;
+  sources: string[];
+  error: string | null;
+}
+
+export interface HealthPremiumEstimateRequest {
+  personName: string;
+  planTier: PlanTier;
+  plan: FinancialPlan;
+}
+
 export const ITEM_TYPES = [
   { value: 'INCOME', label: 'Income' },
   { value: 'EXPENSE', label: 'Expense' },
@@ -52,6 +92,7 @@ export const ITEM_TYPES = [
   { value: 'CASH', label: 'Cash' },
   { value: 'REAL_ESTATE', label: 'Real Estate' },
   { value: 'LIFE_INSURANCE_BENEFIT', label: 'Life Insurance Benefit' },
+  { value: 'LIFE_INSURANCE_CASH', label: 'Life Insurance Cash Value' },
   { value: 'SOCIAL_SECURITY_BENEFITS', label: 'Social Security Benefits' },
   { value: 'ROTH_CONTRIBUTION', label: 'Roth Contribution' },
   { value: 'QUALIFIED_CONTRIBUTION', label: 'Qualified Contribution' },
@@ -187,4 +228,84 @@ export interface ScenarioPdfRequest {
   rateValue?: number;
   scenarioStatesByYear?: StateByYear[];
   scenarioName?: string;
+}
+
+export interface RefreshImportedRow {
+  accountId: number;
+  personName: string;
+  itemType: string;
+  description: string;
+  value: number;
+  actual: number;
+  asOf: string;
+  stale: boolean;
+}
+
+export interface RefreshSkippedRow {
+  account: string;
+  reason: string;
+}
+
+export interface RefreshReport {
+  year: number;
+  imported: RefreshImportedRow[];
+  skipped: RefreshSkippedRow[];
+  unknownPersons: string[];
+  handEnteredAssetRows: FinancialEntry[];
+}
+
+export interface RefreshBalancesResponse {
+  plan: FinancialPlan;
+  report: RefreshReport;
+}
+
+export interface RefreshRunBalance {
+  accountId: number;
+  personName: string;
+  itemType: string;
+  description: string;
+  actual: number;
+  asOf: string;
+  stale: boolean;
+  projected: number;
+}
+
+export interface RefreshRun {
+  id: number;
+  refreshedAt: string;
+  planYear: number;
+  importedCount: number;
+  skippedCount: number;
+  actualTotal: number;
+  projectedTotal: number;
+  netWorthPlanYear: number | null;
+  balances?: RefreshRunBalance[];
+  projection?: YearSummary[];
+}
+
+export interface YearSummary {
+  year: number;
+  totalIncome: number;
+  totalExpenses: number;
+  totalSocialSecurity: number;
+  totalTaxes: number;
+  totalWithdrawals: number;
+  rmdWithdrawals: number;
+  deficit: number;
+  qualifiedAssets: number;
+  nonQualifiedAssets: number;
+  rothAssets: number;
+  cash: number;
+  realEstate: number;
+  lifeInsuranceCash: number;
+  lifeInsuranceBenefits: number;
+  mortgageBalance: number;
+  mortgagePayment: number;
+  mortgageInterest: number;
+  mortgagePrincipal: number;
+  mortgageRepayment: number;
+  healthPremiums: number;
+  irmaaSurcharge: number;
+  totalAssets: number;
+  netWorth: number;
 }

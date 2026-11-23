@@ -17,24 +17,18 @@ This application models long-term financial projections including:
 
 ## User Interfaces
 
-The application offers two user interfaces:
+The application is a web interface (Spring Boot + React) plus a CLI for batch
+runs from CSV files. The earlier JavaFX desktop interface was removed in
+November 2026; the web interface is the only GUI.
 
 ### Web Interface (Spring Boot + React)
-A modern web-based interface accessible through any browser. Features include:
+A web-based interface accessible through any browser, including a phone. Features include:
 - Tabbed interface for managing Persons, Financial Entries, Rates, and States
 - State-by-year tax configuration (NJ, NY, FL)
 - Interactive results display with PDF generation
 - Sensitivity analysis tool
 - Roth conversion comparison tool
-- Save/Load financial plans as JSON files
-
-### Desktop Interface (JavaFX)
-A native desktop application with:
-- Full-featured tabbed interface with States configuration
-- State-by-year tax configuration (NJ, NY, FL)
-- Embedded PDF viewer for generated plans
-- Native file dialogs for save/load operations
-- Sensitivity analysis and Roth comparison tabs
+- Plan stored in SQLite with autosave; Export/Import as JSON files
 
 ## Features
 
@@ -70,6 +64,45 @@ The application implements a composite strategy pattern with four optimization s
 - **Social Security Tax Calculator** - FICA taxes with wage base limits
 - **Long-term Capital Gains Calculator** - Capital gains with configurable cost basis
 - **RMD Calculator** - IRS Uniform Lifetime Table calculations
+
+### Social Security and Health Premiums
+
+Each person carries their own Social Security record and health cover, entered on
+the Persons tab in today's dollars per month:
+
+- **Benefit at full retirement age** (the SSA statement figure) and a **claiming
+  age** from 62 to 70. The engine applies the statutory reduction for claiming
+  early (5/9 of 1% a month for 36 months, 5/12 of 1% beyond) and the delayed
+  credit (8% a year to 70), starts the benefit in the year the person reaches the
+  claiming age, and grows it at the Social Security COLA rate from the plan's
+  first year. A spouse receives the larger of their own benefit and half of the
+  other's full-retirement-age benefit (reduced if claimed early) once both have
+  claimed. Hand-entered Social Security rows still work for anyone who prefers to
+  type the amount.
+- **Premium before Medicare** (COBRA or an ACA plan), charged in years when nobody
+  in the plan has wage income, until the person turns 65.
+- **Medicare supplement and Part D plan premium.** From 65 the engine adds the
+  standard Part B premium and the income-related surcharge (IRMAA) for Part B
+  and Part D, set from the household's modified adjusted gross income two years
+  earlier. The premium tables are the CMS 2026 schedule; thresholds are indexed at
+  2.5% a year and premiums grow at the **Medical Inflation** rate on the Rates tab
+  (default 5.5%).
+
+The Persons form can research these two premiums for you: pick Silver or Gold
+and press **Estimate from the web**. The server runs the local `claude` CLI
+(`claude -p` with web search, billed to the subscription, `claude.executable`
+in `application.properties` if it is not on PATH) with a prompt built from the
+plan: year of birth, state of residence by year from the States tab, the last
+wage year of the person and of the household, the resulting gap before
+Medicare and the Medicare year. The answer, its sources and a suggested
+Medical Inflation rate come back into the form for you to apply; every run is
+kept in the plan store with its prompt. A run takes two to four minutes and
+nothing in it names a person.
+
+Health premiums are a cash outflow like any expense and appear as their own line
+in the results, the PDF and the refresh history. From the year anyone in the plan
+turns 63, the Roth conversion strategy stops a conversion short of the next IRMAA
+threshold, since that year's income sets a premium two years on.
 
 ### Supported Filing Statuses
 
@@ -127,7 +160,6 @@ financial-planning/
 ├── src/
 │   ├── main/java/rg/financialplanning/
 │   │   ├── FinancialPlanner.java          # CLI entry point
-│   │   ├── FinancialPlannerApp.java       # JavaFX entry point
 │   │   ├── calculator/                     # Tax calculators
 │   │   │   ├── FederalTaxCalculator.java
 │   │   │   ├── NJStateTaxCalculator.java
@@ -159,15 +191,6 @@ financial-planning/
 │   │   │   ├── ExpenseManagementStrategy.java
 │   │   │   ├── RothConversionOptimizationStrategy.java
 │   │   │   └── TaxCalculationStrategy.java
-│   │   ├── ui/                             # JavaFX desktop UI
-│   │   │   ├── MainController.java
-│   │   │   ├── PersonsTabController.java
-│   │   │   ├── EntriesTabController.java
-│   │   │   ├── RatesTabController.java
-│   │   │   ├── StatesTabController.java
-│   │   │   ├── ResultsTabController.java
-│   │   │   ├── SensitivityTabController.java
-│   │   │   └── RothComparisonTabController.java
 │   │   └── web/                            # Spring Boot web backend
 │   │       ├── FinancialPlannerWebApp.java
 │   │       ├── controller/
@@ -245,21 +268,6 @@ cd frontend
 npm start
 ```
 
-### Running the Desktop Interface (JavaFX)
-
-Run the JavaFX desktop application:
-
-```bash
-mvn javafx:run -Pdesktop
-```
-
-Or build and run directly:
-
-```bash
-mvn clean compile -Pdesktop
-mvn javafx:run -Pdesktop
-```
-
 ### Running the CLI
 
 ```bash
@@ -315,6 +323,7 @@ Jane,INCOME,Salary,80000,2024,2028
 | SOCIAL_SECURITY_BENEFITS | Social Security income |
 | REAL_ESTATE | Real estate value |
 | LIFE_INSURANCE_BENEFIT | Life insurance benefits |
+| LIFE_INSURANCE_CASH | Cash value of permanent life insurance (default growth 4%) |
 
 ### Persons CSV (`persons.csv`)
 
@@ -346,6 +355,62 @@ QUALIFIED,7.0
 NON_QUALIFIED,6.0
 ROTH,7.0
 ```
+
+## Where the Web Plan Is Stored
+
+The web interface keeps the plan in a SQLite database at
+`~/.financial-planning/planner.db` (override with `planner.db=` in
+`application.properties`). The schema is created on first start from
+`planner-schema.sql`. Every edit is written back about half a second later; the
+header shows Saving, Saved or the error. A tab that comes back to the foreground
+reloads the stored plan, so a phone and a desktop see the same plan.
+
+- `GET /api/plan` returns the stored plan, `PUT /api/plan` replaces it.
+- **Export** downloads the plan as JSON; **Import** loads a JSON file into the
+  database. The JSON file is the planner's own export format.
+- Every aggregator refresh is recorded: `refresh_runs`, the balances it brought
+  in (`refresh_balances`, with the captured balance and the projected year-end
+  figure per account and person) and the yearly projection the plan produced
+  right after (`projection_history`). `GET /api/plan/history` lists the runs and
+  `GET /api/plan/history/{id}` returns one with its rows, for a plan-vs-actual
+  comparison later.
+- The database holds your figures, so it lives outside the repository.
+
+## Refreshing Balances from the Finance Aggregator
+
+The web interface can pull current account balances from a locally running
+[finance aggregator](https://github.com/goerajat/finance-aggregator) and write them
+into the plan as asset entries (QUALIFIED, NON_QUALIFIED, ROTH, CASH,
+LIFE_INSURANCE_CASH). Press **Refresh balances from aggregator** on the Entries tab.
+
+- Each balance is compounded at the plan rate for its bucket from its capture date to
+  31 December of the current year and written as a current-year entry, which the
+  planner treats as the end-of-year balance (growth applies from the following year).
+- Refreshed rows carry a `source` of `aggregator:<accountId>`, show an `AGG` badge, and
+  are replaced wholesale on the next refresh. Hand-entered rows are never touched; the
+  refresh report lists hand-entered asset rows that would double count.
+- The mapping lives outside the repository in `~/.financial-planning/aggregator.json`
+  (override the path with the `aggregator.config` property), because it names people
+  and accounts:
+
+```json
+{
+  "baseUrl": "http://127.0.0.1:8765",
+  "staleDays": 3,
+  "persons": { "JOHN DOE": "John", "Jane Roe": "Jane" },
+  "typeMap": { "HSA": "ROTH" },
+  "accounts": {
+    "66": { "itemType": "LIFE_INSURANCE_CASH", "person": "John" },
+    "99": { "skip": true }
+  }
+}
+```
+
+`persons` maps aggregator holder names (matched case-insensitively) to plan person
+names; joint accounts are split evenly. `typeMap` overrides the default account-type
+mapping (IRA/401K/403B to QUALIFIED, ROTH_IRA to ROTH, BROKERAGE to NON_QUALIFIED,
+CHECKING/SAVINGS/CASH to CASH; anything else is skipped with a reason). `accounts`
+overrides one account by its aggregator id.
 
 ## CSV Export Format
 

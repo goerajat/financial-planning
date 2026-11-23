@@ -17,6 +17,12 @@ const RatesTab: React.FC = () => {
     return ITEM_TYPES.find(t => t.value === itemType)?.label || itemType;
   };
 
+  // Entry types in their usual order, then rate-only keys the server knows (medical inflation).
+  const rateKeys = [
+    ...ITEM_TYPES.map(t => t.value),
+    ...rateConfigs.map(c => c.itemType).filter(k => !ITEM_TYPES.some(t => t.value === k)),
+  ];
+
   return (
     <div className="tab-content">
       <h2>Growth & Interest Rates</h2>
@@ -33,19 +39,21 @@ const RatesTab: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {ITEM_TYPES.map(type => (
-            <tr key={type.value}>
-              <td>{getDisplayName(type.value)}</td>
-              <td>
+          {rateKeys.map(key => (
+            <tr key={key}>
+              <td data-label="Item type" className="cell-primary">{getDisplayName(key)}</td>
+              <td data-label="Rate (%)">
                 <input
                   type="number"
                   step="0.1"
-                  value={rates[type.value] ?? 0}
-                  onChange={e => updateRate(type.value, parseFloat(e.target.value) || 0)}
+                  inputMode="decimal"
+                  aria-label={`${getDisplayName(key)} rate, percent per year`}
+                  value={rates[key] ?? 0}
+                  onChange={e => updateRate(key, parseFloat(e.target.value) || 0)}
                   className="rate-input"
                 />
               </td>
-              <td className="description-cell">{getDescription(type.value)}</td>
+              <td data-label="Description" className="description-cell">{getDescription(key)}</td>
             </tr>
           ))}
         </tbody>

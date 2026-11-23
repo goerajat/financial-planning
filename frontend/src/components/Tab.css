@@ -4,12 +4,14 @@
 
 .tab-content h2 {
   margin-top: 0;
-  color: #333;
+  color: var(--ink);
+  letter-spacing: -0.01em;
 }
 
 .tab-description {
-  color: #666;
+  color: var(--ink-2);
   margin-bottom: 20px;
+  max-width: 70ch;
 }
 
 .form-row {
@@ -17,14 +19,28 @@
   gap: 10px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+input,
+select,
+button {
+  font-family: inherit;
 }
 
 .form-row input,
-.form-row select {
+.form-row select,
+.form-group input,
+.form-group select,
+.input-group input,
+.input-group select {
+  min-height: var(--control-h);
   padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--surface);
 }
 
 .form-row input[type="text"] {
@@ -32,21 +48,26 @@
 }
 
 .form-row input[type="number"] {
-  width: 120px;
+  width: 140px;
 }
 
 .form-row .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: #555;
+  gap: 8px;
+  min-height: var(--control-h);
+  padding: 0 4px;
+  font-size: 15px;
+  color: var(--ink-2);
   cursor: pointer;
 }
 
 .form-row .checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  accent-color: var(--accent);
   cursor: pointer;
 }
 
@@ -56,8 +77,8 @@
   gap: 15px;
   margin-bottom: 20px;
   padding: 20px;
-  background: #f9f9f9;
-  border-radius: 8px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
 }
 
 .form-group {
@@ -68,16 +89,413 @@
 
 .form-group label {
   font-weight: 500;
-  color: #555;
+  color: var(--ink-2);
   font-size: 13px;
 }
 
-.form-group input,
-.form-group select {
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.form-hint {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+/* The form names its own mode; while editing it is outlined in the accent. */
+.form-grid .form-title {
+  grid-column: 1 / -1;
+  margin: 0 0 -4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.form-grid.editing {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.form-grid .form-actions {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  align-items: center;
+}
+
+/* Destructive actions: outlined at rest, filled only inside the confirm step. */
+button[type="button"].danger-outline {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+button[type="button"].danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.row-confirm {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.row-confirm .confirm-text {
+  font-size: 13px;
+  color: var(--ink);
+  white-space: normal;
+}
+
+.data-table tr.row-editing td {
+  background: var(--accent-soft);
+}
+
+.cell-primary .tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+  vertical-align: middle;
+}
+
+.tab-content .empty-message {
+  color: var(--ink-3);
+}
+
+/* A heading row inside a form grid: full width, a rule above, tight to the fields below. */
+.form-grid .form-section {
+  grid-column: 1 / -1;
+  margin: 10px 0 -6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink-2);
+}
+
+.form-grid .form-group-check {
+  justify-content: flex-end;
+}
+
+.form-grid .form-group-check .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--control-h);
+  font-size: 15px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.form-grid .form-group-check .checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+/* An input with a unit on either side, sharing one border. */
+.input-affix {
+  display: flex;
+  align-items: stretch;
+  min-height: var(--control-h);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.input-affix:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.input-affix .affix {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
   font-size: 14px;
+  color: var(--ink-3);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+
+.input-affix .affix:first-child {
+  border-right: 1px solid var(--line);
+}
+
+.input-affix .affix:last-child {
+  border-left: 1px solid var(--line);
+}
+
+.form-group .input-affix input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+.form-group .input-affix input:focus-visible {
+  outline: none;
+}
+
+.data-table td.cell-detail {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+/* Premium research: a full-width region of the form, not a card of its own. The
+   result sits under a rule; nothing here has a second surface. */
+.form-grid .estimate-block {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.estimate-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.estimate-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.estimate-field label {
+  font-weight: 500;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.estimate-field select {
+  min-height: var(--control-h);
+  padding: 8px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  background: var(--surface);
+}
+
+.form-grid button[type="button"].estimate-start,
+.form-grid button[type="button"].estimate-apply {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Disabled wins over every button colour above, whatever the specificity of the rest. */
+.form-grid button[type="button"]:disabled,
+.form-grid button[type="button"].estimate-start:disabled,
+.form-grid button[type="button"].estimate-apply:disabled {
+  background: var(--line-2);
+  color: var(--ink-2);
+}
+
+.estimate-live {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h);
+}
+
+.estimate-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.estimate-status.is-error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.estimate-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--line-2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: estimate-spin 0.9s linear infinite;
+}
+
+@keyframes estimate-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .estimate-spinner { animation-duration: 2.4s; }
+}
+
+.estimate-error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--danger);
+}
+
+.estimate-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.estimate-figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 20px;
+  margin: 0;
+}
+
+.estimate-figures dt {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.estimate-figures dd {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.estimate-figures dd .muted {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.estimate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.estimate-note {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.link-button,
+.form-grid button[type="button"].link-button {
+  min-height: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.estimate-notes {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.estimate-notes summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--control-h);
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 500;
+  list-style: none;
+}
+
+/* Flex removes the native marker, so the disclosure draws its own. */
+.estimate-notes summary::-webkit-details-marker {
+  display: none;
+}
+
+.estimate-notes summary::before {
+  content: "▸";
+  font-size: 12px;
+}
+
+.estimate-notes[open] > summary::before {
+  content: "▾";
+}
+
+.estimate-notes h5 {
+  margin: 14px 0 4px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.estimate-notes p,
+.estimate-notes ul {
+  margin: 8px 0;
+}
+
+.estimate-notes ul {
+  padding-left: 20px;
+}
+
+.estimate-notes a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+.estimate-table {
+  width: 100%;
+  margin: 8px 0;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.estimate-table th,
+.estimate-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.estimate-table th {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.estimate-sources {
+  margin-top: 6px;
+}
+
+.estimate-sources .muted {
+  color: var(--ink-3);
+}
+
+/* The editing row's highlight is tinted, so its muted text needs a darker ink. */
+.data-table tr.row-editing .muted {
+  color: var(--ink-2);
+}
+
+.data-table td.cell-detail .muted,
+.data-table td .muted {
+  font-size: inherit;
 }
 
 .form-actions {
@@ -91,88 +509,159 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .filter-row select {
+  min-height: var(--control-h);
   padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  font-size: 16px;
   min-width: 200px;
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  font-variant-numeric: tabular-nums;
 }
 
 .data-table th,
 .data-table td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
 }
 
 .data-table th {
-  background: #f5f5f5;
+  background: var(--surface-2);
   font-weight: 600;
-  color: #333;
+  color: var(--ink);
 }
 
-.data-table tr:hover {
-  background: #fafafa;
+.row-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .data-table button {
-  margin-right: 5px;
-  padding: 5px 10px;
-  font-size: 12px;
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+@media (pointer: coarse) {
+  /* A text link that acts as a button still needs a finger-sized target. */
+  .link-button,
+  .form-grid button[type="button"].link-button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .data-table button {
+    min-height: 44px;
+    padding: 8px 14px;
+    font-size: 14px;
+  }
 }
 
 .empty-message {
   text-align: center;
-  color: #999;
-  padding: 40px !important;
+  color: var(--ink-3);
+  padding: 40px 16px !important;
+  line-height: 1.5;
 }
 
 button {
+  min-height: var(--control-h);
   padding: 8px 16px;
-  background: #4a90d9;
-  color: white;
+  background: var(--accent);
+  color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 14px;
-  transition: background 0.2s;
-}
-
-button:hover {
-  background: #3a7bc8;
+  transition: background 0.15s ease-out;
 }
 
 button:disabled {
-  background: #ccc;
+  background: var(--line-2);
+  color: var(--ink-2);
   cursor: not-allowed;
 }
 
 button[type="button"] {
-  background: #888;
+  background: var(--neutral-btn);
 }
 
-button[type="button"]:hover {
-  background: #666;
+/* A link that stands in a button row (opening a PDF needs a real anchor). */
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-h);
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  button:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  button[type="button"]:hover:not(:disabled) {
+    background: var(--neutral-btn-hover);
+  }
+
+  button[type="button"].danger-outline:hover:not(:disabled) {
+    background: var(--danger-soft);
+  }
+
+  button[type="button"].danger:hover:not(:disabled) {
+    background: #8f1c13;
+  }
+
+  .form-grid button[type="button"].estimate-start:hover:not(:disabled),
+  .form-grid button[type="button"].estimate-apply:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .button-link:hover {
+    background: var(--accent-hover);
+  }
+
+  .data-table tbody tr:hover {
+    background: var(--surface-2);
+  }
 }
 
 /* Rates Tab specific */
 .rates-table .rate-input {
-  width: 80px;
+  width: 96px;
+  min-height: var(--control-h);
+  padding: 6px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  font-size: 16px;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .rates-table .description-cell {
-  color: #666;
+  color: var(--ink-2);
   font-size: 13px;
 }
 
@@ -180,73 +669,617 @@ button[type="button"]:hover {
 .results-tab {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 140px);
+  gap: 16px;
 }
 
 .results-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.results-header h2 {
+  margin-bottom: 0;
 }
 
 .results-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .zoom-controls {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: #f5f5f5;
-  padding: 5px 10px;
-  border-radius: 4px;
+  background: var(--surface-2);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
 }
 
 .zoom-controls button {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  min-height: 32px;
   padding: 0;
   font-size: 18px;
+  line-height: 1;
 }
 
 .zoom-controls span {
   min-width: 50px;
   text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-lede {
+  margin: 0;
+  color: var(--ink-2);
+  max-width: 70ch;
+  line-height: 1.5;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
+}
+
+.summary-table caption {
+  caption-side: top;
+  text-align: left;
+  color: var(--ink-3);
+  font-size: 12px;
+  padding: 0 0 8px 0;
+}
+
+.summary-table th,
+.summary-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.summary-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-weight: 600;
+  text-align: right;
+}
+
+.summary-table thead th:first-child {
+  text-align: left;
+  z-index: 3;
+}
+
+.summary-table tbody th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.summary-table .num {
+  text-align: right;
+}
+
+.summary-table .strong {
+  font-weight: 600;
+}
+
+.summary-table .shortfall-row td,
+.summary-table .shortfall-row th {
+  background: var(--warn-soft);
+}
+
+.summary-table .shortfall-row .strong {
+  color: var(--warn-ink);
+}
+
+@media (hover: hover) {
+  .summary-table tbody tr:hover td,
+  .summary-table tbody tr:hover th {
+    background: var(--accent-soft);
+  }
+}
+
+/* Wide tables scroll inside their container; the first column stays put so
+   the row label survives the pan. */
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  max-height: 70vh;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.table-container table:not(.data-table) tbody th:first-child,
+.table-container table:not(.data-table) tbody td:first-child,
+.table-container table:not(.data-table) thead tr:not(.column-row) th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--line);
+}
+
+.table-container table:not(.data-table) thead tr:not(.column-row) th:first-child {
+  z-index: 3;
+}
+
+/* Grouped results table: a band per column group over the column labels. Balances
+   and flows get their own hue; the hue repeats as a rule under every column label so
+   a group stays recognisable after its name has panned out of view. */
+.summary-table.grouped {
+  --group-h: 34px;
+  --group-assets: #2f6fb3;
+  --group-assets-ink: #1f5a99;
+  --group-assets-soft: #e8f0fa;
+  --group-liabilities: #6b5ca5;
+  --group-liabilities-ink: #4a3f7a;
+  --group-liabilities-soft: #efecf7;
+  --group-inflows: #2f8f5b;
+  --group-inflows-ink: #1f6b43;
+  --group-inflows-soft: #e6f4ec;
+  --group-outflows: #d9892a;
+  --group-outflows-ink: #8a4b0f;
+  --group-outflows-soft: #fdf1e2;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.summary-table.grouped thead tr.group-row th {
+  top: 0;
+  height: var(--group-h);
+  padding: 0 10px;
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.summary-table.grouped thead tr.group-row th.standalone {
+  height: auto;
+  vertical-align: bottom;
+  padding: 8px 10px;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: right;
+}
+
+.summary-table.grouped thead tr.group-row th.standalone:first-child {
+  text-align: left;
+}
+
+.summary-table.grouped thead tr.column-row th {
+  top: calc(var(--group-h) + 2px);
+}
+
+.summary-table.grouped .group-start {
+  border-left: 1px solid var(--line-2);
+}
+
+.summary-table.grouped thead th.group {
+  color: var(--group-ink);
+  background: var(--group-soft);
+  border-bottom: 2px solid var(--group-hue);
+}
+
+.summary-table.grouped thead tr.column-row th[class*="group-"] {
+  box-shadow: inset 0 -2px 0 var(--group-hue);
+}
+
+.summary-table.grouped .group-assets {
+  --group-hue: var(--group-assets);
+  --group-ink: var(--group-assets-ink);
+  --group-soft: var(--group-assets-soft);
+}
+
+.summary-table.grouped .group-liabilities {
+  --group-hue: var(--group-liabilities);
+  --group-ink: var(--group-liabilities-ink);
+  --group-soft: var(--group-liabilities-soft);
+}
+
+.summary-table.grouped .group-inflows {
+  --group-hue: var(--group-inflows);
+  --group-ink: var(--group-inflows-ink);
+  --group-soft: var(--group-inflows-soft);
+}
+
+.summary-table.grouped .group-outflows {
+  --group-hue: var(--group-outflows);
+  --group-ink: var(--group-outflows-ink);
+  --group-soft: var(--group-outflows-soft);
+}
+
+/* The label slides along inside its band while the group is panned. */
+.summary-table.grouped .group-label {
+  position: sticky;
+  left: 60px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.summary-table.grouped .group-label button {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--group-h);
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+.summary-table.grouped .group-label button:focus-visible {
+  outline: 2px solid var(--group-hue);
+  outline-offset: -2px;
+}
+
+.summary-table.grouped .group-chevron {
+  color: var(--group-hue);
+  flex: none;
+}
+
+.summary-table.grouped .group-period {
+  margin-left: 6px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-3);
+}
+
+.summary-table.grouped th.of-which {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.summary-table.grouped td.of-which {
+  color: var(--ink-2);
+}
+
+.summary-table.grouped td.shortfall {
+  color: var(--warn-ink);
+}
+
+.summary-footnote {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+.summary-footnote b {
+  font-weight: 600;
+  color: var(--ink-2);
 }
 
 .pdf-container {
-  flex: 1;
-  background: #f0f0f0;
-  border-radius: 8px;
-  overflow: hidden;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  overflow: auto;
   display: flex;
   justify-content: center;
   align-items: flex-start;
   padding: 20px;
+  min-height: 400px;
 }
 
 .pdf-container iframe {
   border: none;
   background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-2);
 }
 
 .loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  color: #666;
-  font-size: 18px;
+  padding: 40px 16px;
+  color: var(--ink-2);
+  font-size: 16px;
 }
 
 .error-message {
-  background: #fee;
-  color: #c00;
+  background: var(--danger-soft);
+  color: var(--danger);
   padding: 10px 15px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   margin-bottom: 15px;
+}
+
+.refresh-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.source-badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}
+
+.refresh-report {
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: var(--surface-2);
+}
+
+.refresh-report h3 {
+  margin: 0 0 8px 0;
+  font-size: 1em;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.refresh-report .warn {
+  color: var(--warn-ink);
+}
+
+.refresh-report ul {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+}
+
+.refresh-report li,
+.refresh-report p {
+  line-height: 1.5;
+}
+
+.refresh-report .muted,
+.muted {
+  color: var(--ink-3);
+  font-size: 0.9em;
+}
+
+.refresh-report .muted {
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Phone layout (content breaks around 580px) ---------- */
+@media (max-width: 640px) {
+  .tab-content {
+    padding: 16px 12px 20px;
+  }
+
+  .tab-content h2 {
+    font-size: 20px;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-row input,
+  .form-row select,
+  .form-row input[type="number"],
+  .form-row input[type="text"],
+  .input-group input,
+  .input-group select,
+  .filter-row select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .form-row button,
+  .form-actions button,
+  .estimate-actions button {
+    width: 100%;
+  }
+
+  .estimate-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .estimate-field select,
+  .estimate-controls > button {
+    width: 100%;
+  }
+
+  .estimate-figures {
+    grid-template-columns: 1fr;
+  }
+
+  .estimate-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .form-grid {
+    padding: 14px 12px;
+  }
+
+  /* Tables become a list of rows; each cell shows its column name. */
+  .data-table {
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .data-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .data-table,
+  .data-table tbody,
+  .data-table tr,
+  .data-table td {
+    display: block;
+  }
+
+  .data-table tr {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 6px 14px;
+    margin-bottom: 10px;
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+  }
+
+  .data-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    text-align: right;
+  }
+
+  .data-table td:last-child {
+    border-bottom: none;
+  }
+
+  .data-table td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: left;
+  }
+
+  .data-table td.cell-primary {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--ink);
+    padding-top: 10px;
+  }
+
+  /* Free text reads better under its label than squeezed beside it. */
+  .data-table td[data-label="Description"],
+  .data-table td.cell-detail {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    text-align: left;
+    line-height: 1.4;
+  }
+
+  .data-table td.row-actions-cell {
+    display: block;
+    padding-top: 10px;
+    text-align: left;
+  }
+
+  .data-table td.row-actions-cell::before {
+    content: none;
+  }
+
+  .data-table .row-actions {
+    width: 100%;
+  }
+
+  .data-table .row-actions button {
+    flex: 1;
+    min-height: 44px;
+    margin: 0;
+  }
+
+  .data-table .row-confirm .confirm-text {
+    flex: 1 0 100%;
+  }
+
+  .data-table td.empty-message {
+    display: block;
+    text-align: center;
+  }
+
+  .data-table td.empty-message::before {
+    content: none;
+  }
+
+  .data-table td.description-cell {
+    display: block;
+    text-align: left;
+    color: var(--ink-3);
+    font-size: 13px;
+    padding-top: 2px;
+  }
+
+  .data-table td.description-cell::before {
+    content: none;
+  }
+
+  .data-table td:not(.cell-primary):not(.description-cell):not(.row-actions-cell) {
+    overflow-wrap: anywhere;
+  }
+
+  .rates-table .rate-input {
+    width: 110px;
+  }
+
+  .table-container {
+    max-height: 65vh;
+    margin: 0 -4px;
+  }
+
+  .summary-table th,
+  .summary-table td {
+    padding: 8px;
+  }
+
+  .summary-table.grouped {
+    --group-h: 44px;
+    font-size: 12px;
+  }
+
+  .summary-table.grouped thead tr.group-row th {
+    padding: 0 8px;
+  }
+
+  .summary-table.grouped thead tr.group-row th.standalone {
+    padding: 8px;
+  }
+
+  .summary-table.grouped .group-label {
+    left: 52px;
+  }
+
+  .results-actions {
+    width: 100%;
+  }
+
+  .results-actions button,
+  .results-actions .button-link {
+    flex: 1 1 auto;
+  }
 }

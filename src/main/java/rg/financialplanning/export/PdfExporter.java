@@ -246,17 +246,18 @@ public class PdfExporter {
                 ItemType.MORTGAGE, ItemType.MORTGAGE_REPAYMENT);
         if (!mortgageEntries.isEmpty()) {
             addInputSubsectionHeader(document, "Mortgage");
-            Table mortgageTable = new Table(UnitValue.createPercentArray(new float[]{2f, 1.5f, 1.5f, 1f, 1f}));
+            Table mortgageTable = new Table(UnitValue.createPercentArray(new float[]{2f, 1.5f, 1.5f, 1.5f, 1f, 1f}));
             mortgageTable.setWidth(UnitValue.createPercentValue(80));
             mortgageTable.setFontSize(9);
 
-            addTableHeader(mortgageTable, "Type", "Amount/Payment", "Description", "Start Year", "End Year");
+            addTableHeader(mortgageTable, "Type", "Amount", "Annual Payment", "Description", "Start Year", "End Year");
             int rowNum = 0;
             for (FinancialEntry entry : mortgageEntries) {
-                String typeLabel = entry.item() == ItemType.MORTGAGE ? "Mortgage Balance" : "Extra Principal";
+                boolean isMortgage = entry.item() == ItemType.MORTGAGE;
                 addInputRow(mortgageTable, rowNum++,
-                        typeLabel,
+                        isMortgage ? "Mortgage Balance" : "Extra Principal",
                         formatCurrency(entry.value()),
+                        isMortgage ? formatCurrency(entry.annualPayment()) : "-",
                         entry.description() != null ? entry.description() : "-",
                         String.valueOf(entry.startYear()),
                         String.valueOf(entry.endYear()));
@@ -412,6 +413,7 @@ public class PdfExporter {
         addProjectionRow(table, "Cash", projectionYears, YearlySummary::cash, rowNum++);
         addProjectionRow(table, "Real Estate", projectionYears, YearlySummary::realEstate, rowNum++);
         addProjectionRow(table, "Life Insurance Benefits", projectionYears, YearlySummary::lifeInsuranceBenefits, rowNum++);
+        addProjectionRow(table, "Life Insurance Cash Value", projectionYears, YearlySummary::lifeInsuranceCash, rowNum++);
         addProjectionSummaryRow(table, "TOTAL ASSETS", projectionYears, YearlySummary::totalAssets);
 
         // Liabilities section
@@ -432,6 +434,7 @@ public class PdfExporter {
         XYSeries cashSeries = new XYSeries("Cash", false, false);
         XYSeries realEstateSeries = new XYSeries("Real Estate", false, false);
         XYSeries lifeInsuranceSeries = new XYSeries("Life Insurance", false, false);
+        XYSeries lifeInsuranceCashSeries = new XYSeries("Life Ins. Cash Value", false, false);
 
         for (YearlySummary summary : summaries) {
             int year = summary.year();
@@ -441,6 +444,7 @@ public class PdfExporter {
             cashSeries.add(year, summary.cash());
             realEstateSeries.add(year, summary.realEstate());
             lifeInsuranceSeries.add(year, summary.lifeInsuranceBenefits());
+            lifeInsuranceCashSeries.add(year, summary.lifeInsuranceCash());
         }
 
         assetDataset.addSeries(qualifiedSeries);
@@ -449,6 +453,7 @@ public class PdfExporter {
         assetDataset.addSeries(cashSeries);
         assetDataset.addSeries(realEstateSeries);
         assetDataset.addSeries(lifeInsuranceSeries);
+        assetDataset.addSeries(lifeInsuranceCashSeries);
 
         // Create dataset for line chart (liabilities and net worth)
         DefaultTableXYDataset lineDataset = new DefaultTableXYDataset();
@@ -691,7 +696,11 @@ public class PdfExporter {
         addTotalRow(table, "Total Mortgage Payments", summaries,
                 s -> s.mortgagePayment() + s.mortgageRepayment(), rowNum++);
         addDataRow(table, "Mortgage Payment", summaries, YearlySummary::mortgagePayment, rowNum++);
+        addDataRow(table, "  of which Interest", summaries, YearlySummary::mortgageInterest, rowNum++);
+        addDataRow(table, "  of which Principal", summaries, YearlySummary::mortgagePrincipal, rowNum++);
         addDataRow(table, "Mortgage Repayment (Extra Principal)", summaries, YearlySummary::mortgageRepayment, rowNum++);
+        addDataRow(table, "Health Premiums", summaries, YearlySummary::healthPremiums, rowNum++);
+        addDataRow(table, "  of which IRMAA", summaries, YearlySummary::irmaaSurcharge, rowNum++);
 
         // Total Cash Outflows
         addSummaryRow(table, "TOTAL CASH OUTFLOWS", summaries, YearlySummary::totalCashOutflows, columnCount);
@@ -723,6 +732,7 @@ public class PdfExporter {
         addTotalRow(table, "Total Cash", summaries, YearlySummary::cash, rowNum++);
         addTotalRow(table, "Total Real Estate", summaries, YearlySummary::realEstate, rowNum++);
         addTotalRow(table, "Total Life Insurance Benefits", summaries, YearlySummary::lifeInsuranceBenefits, rowNum++);
+        addTotalRow(table, "Total Life Insurance Cash Value", summaries, YearlySummary::lifeInsuranceCash, rowNum++);
 
         // Total Assets
         addSummaryRow(table, "TOTAL ASSETS", summaries, YearlySummary::totalAssets, columnCount);

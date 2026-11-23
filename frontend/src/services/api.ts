@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { FinancialPlan, RateConfig, SensitivityAnalysisRequest, SensitivityAnalysisResponse, RothComparisonRequest, RothComparisonResponse, StateScenarioRequest, StateScenarioResponse, ScenarioPdfRequest } from '../types';
+import { FinancialPlan, HealthPremiumEstimate, HealthPremiumEstimateRequest, RateConfig, RefreshBalancesResponse, RefreshRun, YearSummary, SensitivityAnalysisRequest, SensitivityAnalysisResponse, RothComparisonRequest, RothComparisonResponse, StateScenarioRequest, StateScenarioResponse, ScenarioPdfRequest } from '../types';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const API_BASE = process.env.REACT_APP_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -11,6 +11,26 @@ const api = axios.create({
 });
 
 export const planApi = {
+  getPlan: async (): Promise<FinancialPlan> => {
+    const response = await api.get('/plan');
+    return response.data;
+  },
+
+  savePlan: async (planData: FinancialPlan): Promise<FinancialPlan> => {
+    const response = await api.put('/plan', planData);
+    return response.data;
+  },
+
+  getHistory: async (): Promise<RefreshRun[]> => {
+    const response = await api.get('/plan/history');
+    return response.data;
+  },
+
+  getHistoryRun: async (id: number): Promise<RefreshRun> => {
+    const response = await api.get(`/plan/history/${id}`);
+    return response.data;
+  },
+
   generatePdf: async (planData: FinancialPlan): Promise<Blob> => {
     const response = await api.post('/plan/generate', planData, {
       responseType: 'blob',
@@ -39,6 +59,16 @@ export const planApi = {
     return response.data;
   },
 
+  getSummary: async (planData: FinancialPlan): Promise<YearSummary[]> => {
+    const response = await api.post('/plan/summary', planData);
+    return response.data;
+  },
+
+  refreshBalances: async (planData: FinancialPlan): Promise<RefreshBalancesResponse> => {
+    const response = await api.post('/plan/refresh-balances', planData);
+    return response.data;
+  },
+
   getDefaultRates: async (): Promise<RateConfig[]> => {
     const response = await api.get('/plan/default-rates');
     return response.data;
@@ -56,6 +86,16 @@ export const planApi = {
 
   runStateScenarioAnalysis: async (request: StateScenarioRequest): Promise<StateScenarioResponse> => {
     const response = await api.post('/plan/state-scenario', request);
+    return response.data;
+  },
+
+  getHealthPremiumEstimate: async (personName: string): Promise<HealthPremiumEstimate> => {
+    const response = await api.get('/plan/health-premiums', { params: { person: personName } });
+    return response.data;
+  },
+
+  requestHealthPremiumEstimate: async (request: HealthPremiumEstimateRequest): Promise<HealthPremiumEstimate> => {
+    const response = await api.post('/plan/health-premiums/estimate', request);
     return response.data;
   },
 

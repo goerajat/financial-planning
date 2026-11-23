@@ -1,88 +1,211 @@
+:root {
+  --ink: #1f2933;
+  --ink-2: #4b5563;
+  --ink-3: #6b7280;
+  --line: #e4e7eb;
+  --line-2: #cbd2d9;
+  --surface: #ffffff;
+  --surface-2: #f5f7fa;
+  --canvas: #eef1f4;
+  --brand: #2c3e50;
+  --brand-ink: #ffffff;
+  --accent: #2f6fb3;
+  --accent-hover: #255c96;
+  --accent-soft: #e8f0fa;
+  --neutral-btn: #6b7280;
+  --neutral-btn-hover: #4b5563;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+  --warn-ink: #8a4b0f;
+  --warn-soft: #fff4e5;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --shadow-2: 0 4px 12px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.06);
+  --control-h: 40px;
+  --gutter: 20px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+@media (pointer: coarse) {
+  :root {
+    --control-h: 44px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --gutter: 12px;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-  background: #f5f5f5;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .app {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
 
 .app-header {
-  background: #2c3e50;
-  color: white;
-  padding: 15px 30px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  padding: 12px var(--gutter);
+  padding-top: calc(12px + env(safe-area-inset-top));
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  gap: 12px;
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 24px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.save-status {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  padding-right: 4px;
+}
+
+.save-status-saving {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.save-status-error {
+  color: #ffb4a8;
+  font-weight: 600;
 }
 
 .header-actions button {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 4px;
+  min-height: var(--control-h);
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: var(--brand-ink);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.15s ease-out;
 }
 
-.header-actions button:hover {
-  background: rgba(255, 255, 255, 0.2);
+.header-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
+/* The tab strip scrolls sideways on narrow screens instead of forcing the page wider. */
 .tab-nav {
-  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--surface);
   display: flex;
-  padding: 0 20px;
-  border-bottom: 1px solid #ddd;
+  gap: 2px;
+  padding: 0 calc(var(--gutter) - 8px);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  scroll-snap-align: start;
   background: none;
   border: none;
-  padding: 15px 25px;
+  border-radius: 0;
+  padding: 14px 16px;
+  min-height: 48px;
   font-size: 15px;
-  color: #666;
+  font-family: inherit;
+  color: var(--ink-2);
   cursor: pointer;
   border-bottom: 3px solid transparent;
-  transition: all 0.2s;
-}
-
-.tab-button:hover {
-  color: #333;
-  background: #f9f9f9;
+  transition: color 0.15s ease-out, border-color 0.15s ease-out;
 }
 
 .tab-button.active {
-  color: #4a90d9;
-  border-bottom-color: #4a90d9;
-  font-weight: 500;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  .header-actions button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  .tab-nav .tab-button:hover:not(:disabled) {
+    color: var(--ink);
+    background: var(--surface-2);
+  }
+
+  .tab-nav .tab-button.active:hover:not(:disabled) {
+    color: var(--accent);
+  }
 }
 
 .main-content {
   flex: 1;
-  background: white;
-  margin: 20px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface);
+  margin: var(--gutter);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
   overflow: auto;
+}
+
+@media (max-width: 640px) {
+  .app-header h1 {
+    font-size: 18px;
+  }
+
+  .main-content {
+    margin: 10px 8px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 10px;
+  }
 }

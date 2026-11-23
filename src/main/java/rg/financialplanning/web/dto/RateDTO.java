@@ -36,6 +36,7 @@ public class RateDTO {
             case ROTH -> "Roth IRA";
             case CASH -> "Cash";
             case LIFE_INSURANCE_BENEFIT -> "Life Insurance Benefit";
+            case LIFE_INSURANCE_CASH -> "Life Insurance Cash Value";
             case REAL_ESTATE -> "Real Estate";
             case SOCIAL_SECURITY_BENEFITS -> "Social Security Benefits";
             case ROTH_CONTRIBUTION -> "Roth Contribution";
@@ -44,6 +45,7 @@ public class RateDTO {
             case MORTGAGE -> "Mortgage";
             case MORTGAGE_REPAYMENT -> "Mortgage Extra Payment";
             case ONE_OFF_PROCEEDS -> "One-off Proceeds";
+            case HEALTH_PREMIUM -> "Medical Inflation";
         };
     }
 
@@ -56,6 +58,7 @@ public class RateDTO {
             case ROTH -> "Expected annual return for Roth accounts";
             case CASH -> "Expected annual return for cash/savings";
             case LIFE_INSURANCE_BENEFIT -> "Growth rate for life insurance death benefit";
+            case LIFE_INSURANCE_CASH -> "Growth rate for the cash value of permanent life insurance";
             case REAL_ESTATE -> "Expected annual appreciation for real estate";
             case SOCIAL_SECURITY_BENEFITS -> "Annual COLA adjustment for Social Security";
             case ROTH_CONTRIBUTION -> "Growth rate for Roth contribution amounts";
@@ -64,6 +67,7 @@ public class RateDTO {
             case MORTGAGE -> "Mortgage interest rate";
             case MORTGAGE_REPAYMENT -> "Not applicable (set to 0)";
             case ONE_OFF_PROCEEDS -> "Not applicable for one-time events (set to 0)";
+            case HEALTH_PREMIUM -> "Annual growth of health premiums: pre-65 cover, Medicare Part B and D, and supplements";
         };
     }
 
