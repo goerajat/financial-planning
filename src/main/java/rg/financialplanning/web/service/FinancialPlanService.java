@@ -83,6 +83,11 @@ public class FinancialPlanService {
 
     /** The yearly projection as JSON rows, for the results table (the PDF carries the full report). */
     public List<YearlySummaryDTO> generateSummaries(FinancialPlanDTO planData) {
+        return Arrays.stream(project(planData)).map(YearlySummaryDTO::from).collect(Collectors.toList());
+    }
+
+    /** The plan run year by year with the default strategy, notes included. */
+    public YearlySummary[] project(FinancialPlanDTO planData) {
         List<FinancialEntry> entries = planData.getEntries().stream()
                 .map(FinancialEntryDTO::toEntry)
                 .collect(Collectors.toList());
@@ -93,8 +98,7 @@ public class FinancialPlanService {
 
         FinancialDataProcessor processor = new FinancialDataProcessor();
         processor.setEntries(entries);
-        YearlySummary[] summaries = processor.generateYearlySummaries(rates, personsByName);
-        return Arrays.stream(summaries).map(YearlySummaryDTO::from).collect(Collectors.toList());
+        return processor.generateYearlySummaries(rates, personsByName);
     }
 
     public byte[] generatePdf(FinancialPlanDTO planData) throws IOException {

@@ -20,7 +20,7 @@ import java.time.Instant;
  */
 public class Database implements AutoCloseable {
 
-    private static final int CURRENT_SCHEMA = 4;
+    private static final int CURRENT_SCHEMA = 5;
 
     private final Path dbFile;
     private final Connection conn;
@@ -149,6 +149,9 @@ public class Database implements AutoCloseable {
                 };
             case 4:
                 // The DDL already created premium_estimates on this open; nothing to alter.
+                return new String[0];
+            case 5:
+                // Likewise explanations.
                 return new String[0];
             default:
                 throw new IllegalStateException("No migration to schema version " + v);

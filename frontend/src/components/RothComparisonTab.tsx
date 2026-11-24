@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import AskPlanButton from './AskPlanButton';
 import { usePlan } from '../context/PlanContext';
 import { planApi } from '../services/api';
 import { RothComparisonResponse, RothComparisonCell, RothComparisonRow, FilingStatus, FILING_STATUSES } from '../types';
@@ -130,6 +131,9 @@ const RothComparisonTab: React.FC = () => {
 
   return (
     <div className="roth-comparison-tab">
+      <div className="results-header ask-row">
+        <AskPlanButton />
+      </div>
       <p className="tab-description">
         Compare 5-year net worth projections with different Roth conversion strategies.
         See how filling different tax brackets affects your long-term financial outcomes.

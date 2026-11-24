@@ -1,5 +1,8 @@
 package rg.financialplanning.model;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -42,6 +45,7 @@ public class YearlySummary {
     private double lookbackMagi;
     private double oneOffProceeds;
     private double lifeInsuranceCash;
+    private final List<String> notes = new ArrayList<>();
 
     public YearlySummary(int year, double totalIncome, double totalExpenses,
                          double qualifiedAssets, double nonQualifiedAssets,
@@ -84,6 +88,15 @@ public class YearlySummary {
         this.lookbackMagi = 0.0;
         this.oneOffProceeds = 0.0;
         this.lifeInsuranceCash = 0.0;
+    }
+
+    /** What the engine decided this year, in plain words, in the order it happened. */
+    public List<String> notes() {
+        return Collections.unmodifiableList(notes);
+    }
+
+    public void addNote(String note) {
+        if (note != null && !note.isBlank()) notes.add(note);
     }
 
     public int year() {

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PlanProvider, usePlan } from './context/PlanContext';
+import { ExplainProvider } from './context/ExplainContext';
+import ExplainPanel from './components/ExplainPanel';
 import IntroTab from './components/IntroTab';
 import PersonsTab from './components/PersonsTab';
 import EntriesTab from './components/EntriesTab';
@@ -106,6 +108,7 @@ const AppContent: React.FC = () => {
         {activeTab === 'roth-comparison' && <RothComparisonTab />}
         {activeTab === 'state-scenario' && <StateScenarioTab />}
       </main>
+      <ExplainPanel />
     </div>
   );
 };
@@ -113,7 +116,9 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <PlanProvider>
-      <AppContent />
+      <ExplainProvider>
+        <AppContent />
+      </ExplainProvider>
     </PlanProvider>
   );
 }

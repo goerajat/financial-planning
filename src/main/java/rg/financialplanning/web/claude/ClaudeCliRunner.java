@@ -54,7 +54,6 @@ public class ClaudeCliRunner {
      *                     no cap decides its own budget, and the budget is the session window.
      */
     public Result run(String prompt, String allowedTools, int maxTurns) {
-        long start = System.currentTimeMillis();
         List<String> command = new ArrayList<>();
         command.add(executable);
         command.add("-p");
@@ -66,6 +65,27 @@ public class ClaudeCliRunner {
             command.add("--max-turns");
             command.add(Integer.toString(maxTurns));
         }
+        return exec(command, prompt);
+    }
+
+    /**
+     * One answer from the model alone: no tools, a single turn, and no transcript
+     * written to disk, so the figures in the prompt stay in the planner's own store.
+     */
+    public Result runWithoutTools(String prompt) {
+        List<String> command = new ArrayList<>();
+        command.add(executable);
+        command.add("-p");
+        command.add("--tools");
+        command.add("");
+        command.add("--max-turns");
+        command.add("1");
+        command.add("--no-session-persistence");
+        return exec(command, prompt);
+    }
+
+    private Result exec(List<String> command, String prompt) {
+        long start = System.currentTimeMillis();
         log.info("claude run: {} (prompt on stdin, {} chars)", String.join(" ", command), prompt.length());
         try {
             ProcessBuilder pb = new ProcessBuilder(command).redirectErrorStream(false);

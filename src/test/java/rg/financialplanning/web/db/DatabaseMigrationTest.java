@@ -31,7 +31,7 @@ public class DatabaseMigrationTest {
     @Test
     public void freshFileIsCurrent() {
         try (Database db = new Database(dir.resolve("fresh.db"))) {
-            assertEquals(4, db.schemaVersion());
+            assertEquals(5, db.schemaVersion());
             assertTrue(hasColumn(db, "entries", "annual_payment"));
             assertTrue(hasColumn(db, "projection_history", "mortgage_interest"));
             assertTrue(hasColumn(db, "persons", "ss_fra_monthly"));
@@ -67,7 +67,7 @@ public class DatabaseMigrationTest {
             assertFalse(hasColumn(db, "entries", "annual_payment"));
         }
         try (Database db = new Database(file)) {
-            assertEquals(4, db.schemaVersion());
+            assertEquals(5, db.schemaVersion());
             assertTrue(hasColumn(db, "premium_estimates", "prompt"));
             assertTrue(hasColumn(db, "entries", "annual_payment"));
             assertTrue(hasColumn(db, "projection_history", "mortgage_interest"));

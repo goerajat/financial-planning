@@ -110,13 +110,21 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
         double combinedTaxableIncome = calculateCombinedTaxableIncome(currentYearlySummary);
 
         // Calculate room in the target bracket based on combined income
-        double roomInBracket = targetBracketThreshold - combinedTaxableIncome;
+        double bracketRoom = targetBracketThreshold - combinedTaxableIncome;
         // From the year anyone is 63, this year's MAGI sets a Medicare premium two years
         // on, so a conversion stops short of the next IRMAA tier.
-        roomInBracket = Math.min(roomInBracket, irmaaRoom(currentYearlySummary, combinedTaxableIncome));
+        double irmaaRoom = irmaaRoom(currentYearlySummary, combinedTaxableIncome);
+        double roomInBracket = Math.min(bracketRoom, irmaaRoom);
+        String cap = irmaaRoom < bracketRoom
+                ? "the next Medicare IRMAA tier, which this year's income sets for "
+                  + (currentYearlySummary.year() + MedicarePremiumCalculator.LOOKBACK_YEARS)
+                : "the top of the " + bracketLabel() + " federal bracket";
 
         if (roomInBracket <= 0) {
             // Already at or above target bracket, no conversion recommended
+            if (anyoneEligible(currentYearlySummary)) {
+                currentYearlySummary.addNote("No Roth conversion: taxable income is already past " + cap + ".");
+            }
             updateYearlySummaryAssets(currentYearlySummary);
             return;
         }
@@ -142,9 +150,15 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
 
             // Convert the lesser of remaining room or available assets
             double conversionAmount = Math.min(remainingRoom, availableToConvert);
+            boolean drained = availableToConvert <= remainingRoom;
 
             // Apply the conversion at individual level, funding tax from all individuals
-            applyConversion(individual, conversionAmount, currentYearlySummary);
+            double landed = applyConversion(individual, conversionAmount, currentYearlySummary);
+            currentYearlySummary.addNote(String.format(
+                    "Roth conversion: %s moved from %s's retirement account to Roth and taxed as income; "
+                            + "%s landed in Roth after the tax on it; the amount was limited by %s.",
+                    money(conversionAmount), individual.name(), money(landed),
+                    drained ? "the balance left in that account" : cap));
 
             remainingRoom -= conversionAmount;
         }
@@ -240,9 +254,9 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
      * @param amount the amount to convert
      * @param summary the yearly summary containing all individuals for tax funding
      */
-    private void applyConversion(IndividualYearlySummary individual, double amount, YearlySummary summary) {
+    private double applyConversion(IndividualYearlySummary individual, double amount, YearlySummary summary) {
         if (amount <= 0) {
-            return;
+            return 0;
         }
 
         // Calculate combined taxable income from all individuals (for married filing jointly)
@@ -268,6 +282,24 @@ public class RothConversionOptimizationStrategy implements TaxOptimizationStrate
         individual.setRothAssets(currentRoth + actualRothContribution);
         double currentRothContributions = individual.rothContributions();
         individual.setRothContributions(currentRothContributions + actualRothContribution);
+        return actualRothContribution;
+    }
+
+    private boolean anyoneEligible(YearlySummary summary) {
+        int year = summary.year();
+        return summary.individualSummaries().values().stream()
+                .anyMatch(ind -> isEligibleForQualifiedWithdrawal(ind, year) && ind.qualifiedAssets() > 0);
+    }
+
+    private String bracketLabel() {
+        if (targetBracketThreshold == MFJ_12_PERCENT_BRACKET || targetBracketThreshold == SINGLE_12_PERCENT_BRACKET) return "12%";
+        if (targetBracketThreshold == MFJ_22_PERCENT_BRACKET || targetBracketThreshold == SINGLE_22_PERCENT_BRACKET) return "22%";
+        if (targetBracketThreshold == MFJ_24_PERCENT_BRACKET || targetBracketThreshold == SINGLE_24_PERCENT_BRACKET) return "24%";
+        return "$" + Math.round(targetBracketThreshold / 1000) + "k";
+    }
+
+    private static String money(double v) {
+        return "$" + Math.round(v / 1000) + "k";
     }
 
     /**

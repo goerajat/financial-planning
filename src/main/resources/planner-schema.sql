@@ -142,3 +142,22 @@ CREATE TABLE IF NOT EXISTS premium_estimates (
 );
 
 CREATE INDEX IF NOT EXISTS idx_premium_estimates_person ON premium_estimates(plan_id, person_key, id);
+
+-- Questions asked about a projection and the answers given, kept per plan
+-- version (plan_hash) so a changed plan starts a fresh thread.
+CREATE TABLE IF NOT EXISTS explanations (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    plan_id      INTEGER NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
+    plan_hash    TEXT NOT NULL,
+    question_key TEXT NOT NULL,
+    question     TEXT NOT NULL,
+    answer       TEXT,
+    prompt       TEXT,
+    status       TEXT NOT NULL,
+    error        TEXT,
+    asked_at     TEXT NOT NULL,
+    answered_at  TEXT,
+    duration_ms  INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_explanations_plan ON explanations(plan_id, plan_hash, id);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePlan } from '../context/PlanContext';
 import { YearSummary } from '../types';
+import AskPlanButton from './AskPlanButton';
 import './Tab.css';
 
 const thousands = (v: number) => {
@@ -144,6 +145,7 @@ const ResultsTab: React.FC = () => {
       <div className="results-header">
         <h2>Financial Plan Results</h2>
         <div className="results-actions">
+          <AskPlanButton />
           <button onClick={generatePdf} disabled={isLoading}>
             {isLoading ? 'Generating...' : (pdfUrl ? 'Regenerate' : 'Generate Plan')}
           </button>

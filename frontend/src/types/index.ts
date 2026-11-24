@@ -309,3 +309,24 @@ export interface YearSummary {
   totalAssets: number;
   netWorth: number;
 }
+
+/** One question about the projection and its answer. */
+export interface Explanation {
+  id: number;
+  question: string;
+  answer: string | null;
+  status: 'RUNNING' | 'DONE' | 'ERROR';
+  askedAt: string;
+  answeredAt: string | null;
+  durationMs: number;
+  error: string | null;
+}
+
+/** The conversation about the plan as it stands; suggestions are null on a status poll. */
+export interface ExplainThread {
+  planHash: string;
+  running: boolean;
+  messages: Explanation[];
+  suggestions: string[] | null;
+  earlier: Explanation[];
+}

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FinancialPlan, HealthPremiumEstimate, HealthPremiumEstimateRequest, RateConfig, RefreshBalancesResponse, RefreshRun, YearSummary, SensitivityAnalysisRequest, SensitivityAnalysisResponse, RothComparisonRequest, RothComparisonResponse, StateScenarioRequest, StateScenarioResponse, ScenarioPdfRequest } from '../types';
+import { ExplainThread, FinancialPlan, HealthPremiumEstimate, HealthPremiumEstimateRequest, RateConfig, RefreshBalancesResponse, RefreshRun, YearSummary, SensitivityAnalysisRequest, SensitivityAnalysisResponse, RothComparisonRequest, RothComparisonResponse, StateScenarioRequest, StateScenarioResponse, ScenarioPdfRequest } from '../types';
 
 const API_BASE = process.env.REACT_APP_API_URL || '/api';
 
@@ -96,6 +96,21 @@ export const planApi = {
 
   requestHealthPremiumEstimate: async (request: HealthPremiumEstimateRequest): Promise<HealthPremiumEstimate> => {
     const response = await api.post('/plan/health-premiums/estimate', request);
+    return response.data;
+  },
+
+  explainThread: async (planData: FinancialPlan): Promise<ExplainThread> => {
+    const response = await api.post('/plan/explain/thread', planData);
+    return response.data;
+  },
+
+  explainAsk: async (planData: FinancialPlan, question: string): Promise<ExplainThread> => {
+    const response = await api.post('/plan/explain/ask', { plan: planData, question });
+    return response.data;
+  },
+
+  explainStatus: async (planHash: string): Promise<ExplainThread> => {
+    const response = await api.get('/plan/explain/status', { params: { plan: planHash } });
     return response.data;
   },
 

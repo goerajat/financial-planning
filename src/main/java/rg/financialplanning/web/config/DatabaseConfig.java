@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import rg.financialplanning.web.db.Database;
+import rg.financialplanning.web.db.ExplanationRepository;
 import rg.financialplanning.web.db.PlanRepository;
 import rg.financialplanning.web.db.PremiumEstimateRepository;
 import rg.financialplanning.web.db.RefreshHistoryRepository;
@@ -31,5 +32,10 @@ public class DatabaseConfig {
     @Bean
     public PremiumEstimateRepository premiumEstimateRepository(Database db) {
         return new PremiumEstimateRepository(db);
+    }
+
+    @Bean
+    public ExplanationRepository explanationRepository(Database db) {
+        return new ExplanationRepository(db);
     }
 }

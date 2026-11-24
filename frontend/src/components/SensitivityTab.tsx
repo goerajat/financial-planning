@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import AskPlanButton from './AskPlanButton';
 import { usePlan } from '../context/PlanContext';
 import { planApi } from '../services/api';
 import {
@@ -141,7 +142,10 @@ const SensitivityTab: React.FC = () => {
 
   return (
     <div className="tab-content sensitivity-tab">
-      <h2>Rate Sensitivity Analysis</h2>
+      <div className="results-header">
+        <h2>Rate Sensitivity Analysis</h2>
+        <AskPlanButton />
+      </div>
       <p className="tab-description">
         Analyze how different growth rates affect your net worth over time.
         Select a rate type, set the range, and see the projected net worth at milestone years.
